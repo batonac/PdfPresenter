@@ -17,8 +17,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import fitz  # PyMuPDF
 from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtPdf import QPdfDocument
 from qfluentwidgets import Action, FluentIcon, MessageBox
 
 from slide_organizer import SlideOrganizer
@@ -35,7 +35,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.slideOrder: list[int] = []
         self.currentPage: int = 0  # Track current page for protocol compatibility
         self.currentFile: str | None = None
-        self.doc: fitz.Document | None = None
+        self.doc: QPdfDocument | None = None
         self.presentationWindow: PresentationWindow | None = None
         self.slideOrganizer: SlideOrganizer
 
@@ -116,51 +116,35 @@ class EditorWindow(QtWidgets.QMainWindow):
     def load(self, file: str) -> None:
         """Load a PDF document."""
         self.currentFile = file
-        self.doc = fitz.open(file)
-        if self.doc is not None:
-            self.slideOrder = list(range(len(self.doc)))
-        self.renderImages()
+        self.doc = QPdfDocument()
+        self.doc.load(file)
+
+        if self.doc.status() == QPdfDocument.Status.Ready:
+            self.slideOrder = list(range(self.doc.pageCount()))
+            self.renderImages()
 
     def renderImages(self) -> None:
         """Render PDF pages to images for thumbnails."""
         self.pdfImages = {}
         self.thumbnails = {}
-        if self.doc is None:
+        if self.doc is None or self.doc.status() != QPdfDocument.Status.Ready:
             return
 
-        num_pages = len(self.doc)
+        num_pages = self.doc.pageCount()
         thumb_width = 200
 
-        # Calculate DPI for thumbnail rendering
-        # PyMuPDF uses a matrix for scaling instead of DPI
-        # Standard PDF is 72 DPI, we want ~150 DPI for thumbnails
-        zoom = 150.0 / 72.0
-        mat = fitz.Matrix(zoom, zoom)
-
         for i in range(num_pages):
-            page = self.doc[i]
+            # Get page size in points
+            page_size = self.doc.pagePointSize(i)
 
-            # Render page to pixmap
-            pix = page.get_pixmap(matrix=mat)
+            # Calculate scale for thumbnail width
+            scale = thumb_width / page_size.width()
+            thumb_height = int(page_size.height() * scale)
 
-            # Convert PyMuPDF pixmap to QImage
-            img_data = pix.samples
-            qimage = QtGui.QImage(
-                img_data,
-                pix.width,
-                pix.height,
-                pix.stride,
-                QtGui.QImage.Format.Format_RGB888,
-            )
+            # Render page at thumbnail size
+            image = self.doc.render(i, QtCore.QSize(thumb_width, thumb_height))
 
-            # Create thumbnail by scaling down
-            thumbnail = qimage.scaled(
-                thumb_width,
-                int(thumb_width * pix.height / pix.width),
-                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
-                QtCore.Qt.TransformationMode.SmoothTransformation,
-            )
-            self.thumbnails[i] = thumbnail.copy()
+            self.thumbnails[i] = image.copy()
 
         self.slideOrganizer.updateThumbnails()
 

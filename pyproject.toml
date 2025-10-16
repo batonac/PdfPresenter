@@ -25,7 +25,6 @@ classifiers = [
     "Topic :: Multimedia :: Graphics :: Presentation",
 ]
 dependencies = [
-    "pymupdf>=1.26.5",
     "pyside6>=6.10.0",
     "pyside6-fluent-widgets>=1.9.1",
 ]

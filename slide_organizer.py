@@ -47,6 +47,7 @@ class FlowLayout(QtWidgets.QLayout):
 
     def addItem(self, item: QtWidgets.QLayoutItem) -> None:
         self.itemList.append(item)
+        self.invalidate()
 
     def count(self) -> int:
         return len(self.itemList)
@@ -58,7 +59,9 @@ class FlowLayout(QtWidgets.QLayout):
 
     def takeAt(self, index: int) -> QtWidgets.QLayoutItem | None:
         if 0 <= index < len(self.itemList):
-            return self.itemList.pop(index)
+            item = self.itemList.pop(index)
+            self.invalidate()
+            return item
         return None
 
     def expandingDirections(self) -> QtCore.Qt.Orientation:
@@ -81,6 +84,10 @@ class FlowLayout(QtWidgets.QLayout):
         size = QtCore.QSize()
         for item in self.itemList:
             size = size.expandedTo(item.minimumSize())
+
+        # Add margins
+        margins = self.contentsMargins()
+        size += QtCore.QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
         return size
 
     def _doLayout(self, rect: QtCore.QRect, testOnly: bool) -> int:
@@ -201,6 +208,19 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         if self.selectedPosition is not None and self.selectedPosition < len(self.thumbnailWidgets):
             self.thumbnailWidgets[self.selectedPosition].setSelected(True)
 
+        # Force layout update and geometry recalculation
+        self.container.updateGeometry()
+        QtCore.QTimer.singleShot(0, self._updateScrollArea)
+
+    def _updateScrollArea(self) -> None:
+        """Update scroll area to reflect new content size."""
+        # Calculate the required height for all thumbnails
+        width = self.viewport().width()
+        height = self.flowLayout.heightForWidth(width)
+
+        # Set minimum size for container to enable scrolling
+        self.container.setMinimumSize(width, height)
+
     def setCurrentSlide(self, position: int) -> None:
         """Highlight the current slide."""
         self.selectedPosition = position
@@ -254,9 +274,9 @@ class SlideOrganizer(QtWidgets.QScrollArea):
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        # Reflow thumbnails on resize
-        if self.viewer.thumbnails:
-            self.updateThumbnails()
+        # Update container size when scroll area is resized
+        if self.viewer.thumbnails and self.thumbnailWidgets:
+            self._updateScrollArea()
 
 
 class SlideThumbnail(QtWidgets.QWidget):

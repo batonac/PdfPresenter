@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import fitz  # PyMuPDF
 from PySide6 import QtCore, QtGui, QtWidgets
 from qfluentwidgets import PushButton
 
@@ -123,30 +122,25 @@ class PresentationWindow(QtWidgets.QWidget):
             target_width = 1920
             target_height = 1080
 
-        num_pages = len(self.editor.doc)
+        num_pages = self.editor.doc.pageCount()
 
         for i in range(num_pages):
-            page = self.editor.doc[i]
-            page_rect = page.rect
+            # Get page size in points
+            page_size = self.editor.doc.pagePointSize(i)
 
-            # Calculate zoom to fit screen width
-            zoom_x = target_width / page_rect.width
-            zoom_y = target_height / page_rect.height
-            # Use the smaller zoom to ensure the page fits
-            zoom = min(zoom_x, zoom_y)
+            # Calculate scale to fit screen
+            scale_x = target_width / page_size.width()
+            scale_y = target_height / page_size.height()
+            scale = min(scale_x, scale_y)
 
-            mat = fitz.Matrix(zoom, zoom)
+            # Calculate render size
+            render_width = int(page_size.width() * scale)
+            render_height = int(page_size.height() * scale)
 
-            # Render page to pixmap
-            pix = page.get_pixmap(matrix=mat, alpha=False)
+            # Render page at target size
+            image = self.editor.doc.render(i, QtCore.QSize(render_width, render_height))
 
-            # Convert PyMuPDF pixmap to QImage
-            img_data = pix.samples
-            qimage = QtGui.QImage(
-                img_data, pix.width, pix.height, pix.stride, QtGui.QImage.Format.Format_RGB888
-            )
-
-            self.pdfImages[i] = qimage.copy()
+            self.pdfImages[i] = image.copy()
 
     def getCurrentSlideIndex(self) -> int:
         """Get the actual page number for the current presentation position."""

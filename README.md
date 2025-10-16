@@ -17,9 +17,8 @@ A PDF presentation tool with presenter view, notes, and timer functionality buil
 
 - Python 3.10 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
-- PySide6
+- PySide6 (includes QtPdf)
 - PySide6-Fluent-Widgets
-- PyMuPDF (fitz) for PDF rendering
 
 ## Installation
 
@@ -48,9 +47,9 @@ uv sync --all-extras
 This application uses:
 - **PySide6** for Qt6 bindings (official Qt support)
 - **PySide6-Fluent-Widgets** for modern Fluent Design UI components
-- **PyMuPDF** (fitz) for fast PDF rendering with excellent Qt6 compatibility
+- **QtPdf** (built into PySide6) for native PDF rendering
 
-PyMuPDF provides high-performance PDF rendering and is fully compatible with PySide6, making it the ideal choice for this application.
+QtPdf provides native, high-performance PDF rendering that's fully integrated with Qt, eliminating the need for external dependencies.
 
 ## Usage
 
