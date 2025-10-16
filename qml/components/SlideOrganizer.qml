@@ -1,19 +1,15 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.FluentWinUI3
 import QtQuick.Layouts
 
 Item {
     id: root
 
     // Empty state
-    Rectangle {
+    Frame {
         anchors.centerIn: parent
         width: 400
         height: 200
-        color: "white"
-        radius: 8
-        border.color: "#E1DFDD"
-        border.width: 1
         visible: pdfBackend.slideCount === 0
 
         ColumnLayout {
@@ -21,18 +17,16 @@ Item {
             anchors.margins: 40
             spacing: 16
 
-            Text {
+            Label {
                 text: "No slides loaded"
                 font.pixelSize: 18
                 font.bold: true
-                color: "#1F1F1F"
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            Text {
+            Label {
                 text: "Drop PDF files here or use 'Import PDF' to get started"
                 font.pixelSize: 13
-                color: "#605E5C"
                 Layout.alignment: Qt.AlignHCenter
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
@@ -78,14 +72,11 @@ Item {
     }
 
     // Size control slider at bottom
-    Rectangle {
+    Pane {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         height: 50
-        color: "white"
-        border.color: "#E1DFDD"
-        border.width: 1
 
         RowLayout {
             anchors.fill: parent
@@ -93,9 +84,8 @@ Item {
             spacing: 8
             layoutDirection: Qt.RightToLeft
 
-            Text {
+            Label {
                 text: Math.round(sizeSlider.value) + "px"
-                color: "#605E5C"
                 font.pixelSize: 12
                 Layout.preferredWidth: 50
             }
@@ -109,9 +99,8 @@ Item {
                 Layout.preferredWidth: 200
             }
 
-            Text {
+            Label {
                 text: "Thumbnail Size:"
-                color: "#605E5C"
                 font.pixelSize: 12
             }
         }

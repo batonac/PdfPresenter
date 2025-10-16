@@ -6,7 +6,7 @@ This document summarizes the successful migration of PDF Presenter from Qt Widge
 
 ## Objective
 
-Port the PDF Presenter application from an imperative Qt Widgets UI using FluentWidgets to a **declarative QML UI** with modern styling inspired by FluentWinUI3.
+Port the PDF Presenter application from an imperative Qt Widgets UI using FluentWidgets to a **declarative QML UI** using the native **FluentWinUI3 Style** from Qt Core.
 
 ## What Was Changed
 
@@ -55,15 +55,15 @@ main.py                           # QML engine initialization
 6. **Timer**: Pauseable timer for presentations
 7. **Notes**: Per-slide speaker notes with text editing
 8. **Navigation**: Keyboard shortcuts and click-to-jump
-9. **Modern UI**: FluentWinUI3-inspired styling
+9. **Modern UI**: Native FluentWinUI3 Style from Qt Core
 10. **Responsive**: Layouts adapt to window size
 
 ### 🎨 Styling
-- Modern color palette: `#0078D4` accent, `#F3F3F3` background
-- Rounded corners with 8px radius (16px when selected)
-- Subtle borders: `#E1DFDD`
-- Hover effects on interactive elements
-- Smooth animations (200ms)
+- **FluentWinUI3 Style** from Qt Core (available since Qt 6.8)
+- Native Windows 11 Fluent Design System appearance
+- Automatic theme integration with system settings
+- Uses official Qt Quick Controls with FluentWinUI3 styling
+- No custom color palette or manual styling needed
 
 ## Testing
 
@@ -97,10 +97,12 @@ All functionality tested and verified:
 - **Smaller Size**: Removed external UI framework
 
 ### User Experience
-- **Modern Look**: FluentWinUI3-inspired without bloat
+- **Native FluentWinUI3**: Official Qt style from Qt Core (Qt 6.8+)
+- **Windows 11 Fluent Design**: Modern, native-looking interface
 - **Smooth Animations**: Qt Quick's animation framework
 - **Responsive**: Flow layout adapts naturally
 - **Touch-Friendly**: QML controls work well on touch devices
+- **Theme Integration**: Respects system-wide theme settings
 
 ## Migration Path
 
@@ -143,7 +145,7 @@ The PDF Presenter has been successfully ported to Qt Quick/QML with:
 - All features working
 - Modern, maintainable codebase
 - No external UI dependencies
-- FluentWinUI3-inspired styling
+- Native FluentWinUI3 Style from Qt Core
 - Better performance and UX
 
-The declarative approach makes the codebase easier to understand, modify, and extend while providing a modern user experience.
+The declarative approach with native FluentWinUI3 styling makes the codebase easier to understand, modify, and extend while providing a modern, native-looking user experience.

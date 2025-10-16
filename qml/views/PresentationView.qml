@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.FluentWinUI3
 import QtQuick.Layouts
 import QtQuick.Window
 
@@ -9,7 +9,6 @@ Window {
     height: 600
     title: "PDF Presenter - Presenter View"
     visible: false
-    color: "#F3F3F3"
 
     onVisibleChanged: {
         if (visible) {
@@ -31,31 +30,24 @@ Window {
             Layout.fillHeight: true
             spacing: 16
 
-            // Preview card
-            Rectangle {
+            // Preview pane
+            Frame {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "white"
-                radius: 8
-                border.color: "#E1DFDD"
-                border.width: 1
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
                     spacing: 12
 
-                    Text {
+                    Label {
                         text: "Current Slide"
                         font.pixelSize: 16
                         font.bold: true
-                        color: "#1F1F1F"
                     }
 
-                    Rectangle {
+                    Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: "#F3F3F3"
 
                         Image {
                             id: previewImage
@@ -79,34 +71,27 @@ Window {
                 }
             }
 
-            // Timer card
-            Rectangle {
+            // Timer pane
+            Frame {
                 Layout.preferredWidth: 200
                 Layout.fillHeight: true
-                color: "white"
-                radius: 8
-                border.color: "#E1DFDD"
-                border.width: 1
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
                     spacing: 12
 
-                    Text {
+                    Label {
                         text: "Timer"
                         font.pixelSize: 16
                         font.bold: true
-                        color: "#1F1F1F"
                         Layout.alignment: Qt.AlignHCenter
                     }
 
-                    Text {
+                    Label {
                         text: pdfBackend.timerText
                         font.pixelSize: 36
                         font.bold: true
                         font.family: "monospace"
-                        color: "#0078D4"
                         Layout.alignment: Qt.AlignHCenter
                     }
 
@@ -116,65 +101,32 @@ Window {
 
                         Button {
                             text: "Start"
+                            highlighted: true
                             onClicked: pdfBackend.startTimer()
-                            
-                            background: Rectangle {
-                                color: parent.pressed ? "#005A9E" : (parent.hovered ? "#1084D8" : "#0078D4")
-                                radius: 4
-                            }
-                            
-                            contentItem: Text {
-                                text: parent.text
-                                color: "white"
-                                font.pixelSize: 12
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
                         }
 
                         Button {
                             text: "Stop"
                             onClicked: pdfBackend.stopTimer()
-                            
-                            background: Rectangle {
-                                color: parent.hovered ? "#F3F3F3" : "white"
-                                radius: 4
-                                border.color: "#E1DFDD"
-                                border.width: 1
-                            }
-                            
-                            contentItem: Text {
-                                text: parent.text
-                                color: "#1F1F1F"
-                                font.pixelSize: 12
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
                         }
                     }
                 }
             }
         }
 
-        // Notes card
-        Rectangle {
+        // Notes pane
+        Frame {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "white"
-            radius: 8
-            border.color: "#E1DFDD"
-            border.width: 1
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 16
                 spacing: 12
 
-                Text {
+                Label {
                     text: "Speaker Notes"
                     font.pixelSize: 16
                     font.bold: true
-                    color: "#1F1F1F"
                 }
 
                 ScrollView {
@@ -192,10 +144,6 @@ Window {
                             if (activeFocus) {
                                 pdfBackend.currentNotes = text
                             }
-                        }
-                        
-                        background: Rectangle {
-                            color: "transparent"
                         }
                     }
                 }

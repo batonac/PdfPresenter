@@ -42,6 +42,10 @@ def main() -> None:
     QtGui.QGuiApplication.setApplicationName("PDF Presenter")
     QtGui.QGuiApplication.setOrganizationName("PdfPresenter")
     
+    # Set the FluentWinUI3 style
+    import os
+    os.environ["QT_QUICK_CONTROLS_STYLE"] = "FluentWinUI3"
+    
     app = QtGui.QGuiApplication(sys.argv)
     
     try:

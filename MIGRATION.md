@@ -192,14 +192,25 @@ from qfluentwidgets import setTheme, Theme
 setTheme(Theme.LIGHT)
 ```
 
-### QML
+### QML with FluentWinUI3 Style
+```python
+# main.py - Set the FluentWinUI3 style
+import os
+os.environ["QT_QUICK_CONTROLS_STYLE"] = "FluentWinUI3"
+```
+
 ```qml
-// Pure QML styling
+// In QML files - Import FluentWinUI3 controls
+import QtQuick.Controls.FluentWinUI3
+
+// Use native FluentWinUI3 controls - no custom styling needed!
 Button {
-    background: Rectangle {
-        color: parent.pressed ? "#005A9E" : "#0078D4"
-        radius: 4
-    }
+    text: "My Button"
+    highlighted: true  // Uses native FluentWinUI3 accent color
+}
+
+Frame {
+    // Automatically styled with FluentWinUI3 theme
 }
 ```
 
@@ -257,7 +268,7 @@ Repeater {
 ## Dependencies Removed
 
 - ❌ `pyside6-fluent-widgets` - No longer needed
-- ✅ `pyside6` >= 6.10.0 - All we need!
+- ✅ `pyside6` >= 6.10.0 - Includes FluentWinUI3 Style (Qt 6.8+)
 
 ## File Changes
 
@@ -289,7 +300,7 @@ These are kept for reference but no longer used.
 
 ✅ **Cleaner Code**: Separation of concerns  
 ✅ **No External UI Dependencies**: Pure PySide6  
-✅ **Modern Styling**: FluentWinUI3-inspired without libraries  
+✅ **Native FluentWinUI3 Style**: Official Qt style from Qt Core (Qt 6.8+)  
 ✅ **Better Maintainability**: Declarative UI is easier to understand  
 ✅ **Responsive Layouts**: Flow automatically adapts to window size  
 ✅ **Future-Proof**: Qt Quick is the future of Qt UI development

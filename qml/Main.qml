@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.FluentWinUI3
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import "components"
@@ -11,19 +11,6 @@ ApplicationWindow {
     width: 1200
     height: 700
     title: "PDF Presenter"
-
-    // Modern color palette inspired by FluentWinUI3
-    readonly property color backgroundColor: "#F3F3F3"
-    readonly property color cardColor: "#FFFFFF"
-    readonly property color accentColor: "#0078D4"
-    readonly property color textColor: "#1F1F1F"
-    readonly property color subtleTextColor: "#605E5C"
-    readonly property color hoverColor: "#F5F5F5"
-    readonly property color borderColor: "#E1DFDD"
-
-    background: Rectangle {
-        color: root.backgroundColor
-    }
 
     Component.onCompleted: {
         // Initialize presentation mode to false
@@ -37,39 +24,23 @@ ApplicationWindow {
         spacing: 0
 
         // Navigation sidebar
-        Rectangle {
+        Pane {
             id: sidebar
             Layout.preferredWidth: 320
             Layout.fillHeight: true
-            color: root.cardColor
-            
-            Rectangle {
-                anchors.right: parent.right
-                width: 1
-                height: parent.height
-                color: root.borderColor
-            }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 8
                 spacing: 8
 
                 // Header
-                Text {
+                Label {
                     text: "PDF Presenter"
                     font.pixelSize: 20
                     font.bold: true
-                    color: root.textColor
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 12
                     Layout.bottomMargin: 12
-                }
-
-                Rectangle {
-                    Layout.preferredHeight: 1
-                    Layout.fillWidth: true
-                    color: root.borderColor
                 }
 
                 // Browse Folder button
@@ -80,40 +51,21 @@ ApplicationWindow {
                     Layout.rightMargin: 8
                     Layout.topMargin: 8
                     onClicked: folderDialog.open()
-                    
-                    background: Rectangle {
-                        color: parent.hovered ? root.hoverColor : "transparent"
-                        radius: 4
-                        border.color: root.borderColor
-                        border.width: parent.hovered ? 1 : 0
-                    }
                 }
 
                 // File browser tree placeholder
-                Rectangle {
+                Frame {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 300
                     Layout.leftMargin: 8
                     Layout.rightMargin: 8
                     Layout.topMargin: 4
-                    color: "transparent"
-                    border.color: root.borderColor
-                    border.width: 1
-                    radius: 6
 
-                    Text {
+                    Label {
                         anchors.centerIn: parent
                         text: "File browser\n(to be implemented)"
-                        color: root.subtleTextColor
                         horizontalAlignment: Text.AlignHCenter
                     }
-                }
-
-                Rectangle {
-                    Layout.preferredHeight: 1
-                    Layout.fillWidth: true
-                    color: root.borderColor
-                    Layout.topMargin: 8
                 }
 
                 // Actions
@@ -150,12 +102,6 @@ ApplicationWindow {
                     Layout.fillHeight: true
                 }
 
-                Rectangle {
-                    Layout.preferredHeight: 1
-                    Layout.fillWidth: true
-                    color: root.borderColor
-                }
-
                 // Present button
                 Button {
                     text: "▶️ Present"
@@ -165,20 +111,7 @@ ApplicationWindow {
                     Layout.topMargin: 8
                     Layout.bottomMargin: 8
                     enabled: pdfBackend.slideCount > 0
-
-                    background: Rectangle {
-                        color: parent.enabled ? (parent.pressed ? "#005A9E" : (parent.hovered ? "#1084D8" : root.accentColor)) : "#CCCCCC"
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 14
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    highlighted: true
 
                     onClicked: {
                         pdfBackend.presentationMode = true
@@ -189,10 +122,9 @@ ApplicationWindow {
         }
 
         // Main content area
-        Rectangle {
+        Pane {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: root.backgroundColor
 
             SlideOrganizer {
                 id: slideOrganizer

@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.FluentWinUI3
 import QtQuick.Layouts
 
-Rectangle {
+Frame {
     id: root
     
     property var slideImage
@@ -15,32 +15,25 @@ Rectangle {
     
     width: 224  // 200px thumbnail + 24px padding
     height: 324 // Calculated based on aspect ratio + controls
-    color: "white"
-    radius: isSelected ? 16 : 8
-    border.color: isSelected ? "#0078D4" : "#E1DFDD"
-    border.width: isSelected ? 2 : 1
     
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
         spacing: 8
         
         // Slide number
-        Text {
+        Label {
             text: (position + 1).toString()
             font.pixelSize: 14
             font.bold: true
-            color: "#1F1F1F"
             Layout.alignment: Qt.AlignHCenter
         }
         
         // Thumbnail image
-        Rectangle {
+        Item {
             width: 200
             height: 282  // 200 * 1.41 aspect ratio
             Layout.preferredWidth: 200
             Layout.preferredHeight: 282
-            color: "#F3F3F3"
             
             Image {
                 anchors.centerIn: parent
@@ -50,14 +43,6 @@ Rectangle {
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 cache: false
-                
-                // Fallback for image provider
-                onStatusChanged: {
-                    if (status === Image.Error || status === Image.Null) {
-                        // Try to use the image directly if image provider doesn't work
-                        // This is a workaround for the QImage to QML binding
-                    }
-                }
             }
         }
         
@@ -65,23 +50,7 @@ Rectangle {
         Button {
             text: "Delete"
             Layout.preferredWidth: 200
-            Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignHCenter
-            
-            background: Rectangle {
-                color: parent.hovered ? "#F3F3F3" : "white"
-                radius: 4
-                border.color: "#E1DFDD"
-                border.width: 1
-            }
-            
-            contentItem: Text {
-                text: parent.text
-                color: "#D13438"
-                font.pixelSize: 12
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
             
             onClicked: root.deleteClicked()
         }
@@ -96,25 +65,5 @@ Rectangle {
         // Drag and drop support (simplified)
         drag.target: root
         drag.axis: Drag.XAndYAxis
-    }
-    
-    // Hover effect
-    states: [
-        State {
-            name: "hovered"
-            when: mouseArea.containsMouse && !isSelected
-            PropertyChanges {
-                target: root
-                border.color: "#0078D4"
-                border.width: 1
-            }
-        }
-    ]
-    
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.NoButton
     }
 }
