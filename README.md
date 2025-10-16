@@ -1,17 +1,17 @@
 # PDF Presenter
 
-A PDF presentation tool with presenter view, notes, and timer functionality built with PySide6 and PyQt-Fluent-Widgets.
+A PDF presentation tool with presenter view, notes, and timer functionality built with PySide6 and Qt Quick QML.
 
 ## Features
 
+- **Modern QML UI**: Declarative interface with native **FluentWinUI3 Style** from Qt Core
 - **Integrated Navigation**: Files and slides in a unified interface
-- **Embedded File Browser**: Browse PDF files directly in the navigation sidebar
-- **Drag & Drop Import**: Drag PDF files from navigation into slide deck
+- **Drag & Drop Import**: Drag PDF files into slide organizer
 - **Multi-PDF Support**: Import pages from multiple PDF documents
 - **Slide Organization**: Reorder and remove slides before presenting
 - **PDF Export**: Save your organized slides as a new PDF
 - **Presentation Mode**: Dual window display (presenter view and projection view)
-- **Fluent UI**: Native Fluent Design System throughout the app
+- **Responsive Layouts**: Flow-based layout for optimal slide organization
 - Speaker notes with autosave
 - Built-in timer
 - Keyboard shortcuts for navigation
@@ -22,8 +22,7 @@ A PDF presentation tool with presenter view, notes, and timer functionality buil
 
 - Python 3.10 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
-- PySide6 (includes QtPdf)
-- PySide6-Fluent-Widgets
+- PySide6 >= 6.10.0 (includes QtPdf and Qt Quick)
 - PyMuPDF (for PDF export)
 
 ## Installation
@@ -51,9 +50,18 @@ uv sync --all-extras
 ## Technical Notes
 
 This application uses:
-- **PySide6** for Qt6 bindings (official Qt support)
-- **PySide6-Fluent-Widgets** for modern Fluent Design UI components
+- **PySide6 6.10+** for Qt6 bindings (official Qt support)
+- **Qt Quick/QML** for declarative UI with the native **FluentWinUI3 Style** (Qt 6.8+)
 - **QtPdf** (built into PySide6) for native PDF rendering
+- **Qt Quick Layouts** for responsive, flow-based slide organization
+
+The declarative QML approach provides:
+- Cleaner separation of UI and business logic
+- More maintainable and understandable code
+- Modern, smooth animations and transitions
+- Native FluentWinUI3 styling without external dependencies
+
+The **FluentWinUI3 Style** is a modern, native-looking style designed for platforms running Windows 11 and above. It draws inspiration from the Fluent UI design and the WinUI3 framework, and can be run on all supported platforms.
 
 QtPdf provides native, high-performance PDF rendering that's fully integrated with Qt, eliminating the need for external dependencies.
 
@@ -156,13 +164,22 @@ uv sync
 
 ```
 PdfPresenter/
-├── main.py                 # Application entry point
-├── editor_window.py        # EditorWindow - organize slides before presenting
-├── presentation_window.py  # PresentationWindow and ProjectorWindow
-├── slide_organizer.py      # SlideOrganizer and SlideThumbnail classes
-├── notes.py                # Notes - speaker notes editor
+├── main.py                 # Application entry point (QML engine)
+├── pdf_backend.py          # Backend logic and models for QML
 ├── timer.py                # PauseableTimer - presentation timer
-├── pdf_view.py             # PDFView - legacy PDF view widget
+├── qml/                    # QML UI files
+│   ├── Main.qml           # Main application window
+│   ├── qmldir             # QML module definition
+│   ├── components/        # Reusable UI components
+│   │   ├── NavButton.qml
+│   │   ├── SlideOrganizer.qml
+│   │   └── SlideThumbnail.qml
+│   └── views/             # Main views
+│       └── PresentationView.qml
+├── editor_window.py        # (Legacy) EditorWindow - Qt Widgets version
+├── presentation_window.py  # (Legacy) PresentationWindow - Qt Widgets version
+├── slide_organizer.py      # (Legacy) SlideOrganizer - Qt Widgets version
+├── notes.py                # (Legacy) Notes - Qt Widgets version
 ├── pyproject.toml          # Project configuration and dependencies
 ├── uv.lock                 # Lockfile for reproducible installs
 ├── PROJECT_STRUCTURE.md    # Detailed project organization
