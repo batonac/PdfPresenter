@@ -18,7 +18,7 @@
 		{
 			"label": "Run PDF Presenter",
 			"type": "shell",
-			"command": "uv run python pdfpresenter.py",
+			"command": "uv run python main.py",
 			"group": {
 				"kind": "build",
 				"isDefault": true
@@ -28,14 +28,14 @@
 		{
 			"label": "Format Code",
 			"type": "shell",
-			"command": "uv run black pdfpresenter.py",
+			"command": "uv run black main.py",
 			"group": "none",
 			"problemMatcher": []
 		},
 		{
 			"label": "Lint Code",
 			"type": "shell",
-			"command": "uv run flake8 pdfpresenter.py",
+			"command": "uv run flake8 main.py",
 			"group": "test",
 			"problemMatcher": []
 		},

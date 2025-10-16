@@ -45,14 +45,14 @@ install_deps() {
 # install dependencies
 install_deps
 
-# prepare start of pdfpresenter.py
-/bin/chmod +x pdfpresenter.py
+# prepare start of main.py
+/bin/chmod +x main.py
 
 # --help
 echo "[x] DONE
 
 Usage:
-1. Run: ./pdfpresenter.py
+1. Run: ./main.py (or uv run pdfpresenter)
 2. Focus on black window
 3. Press 'o' to open a file
 4. Move presentation view to projector/external display

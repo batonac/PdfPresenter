@@ -54,7 +54,7 @@ uv run pdfpresenter
 
 Or run the script directly:
 ```bash
-uv run python pdfpresenter.py
+uv run python main.py
 ```
 
 ### Keyboard Shortcuts
@@ -119,14 +119,20 @@ uv sync
 
 ```
 PdfPresenter/
-├── pdfpresenter.py      # Main application file
-├── pyproject.toml       # Project configuration and dependencies
-├── uv.lock             # Lockfile for reproducible installs
-├── README.md           # This file
-└── .vscode/            # VSCode configuration
-    ├── launch.json     # Debug configurations
-    ├── settings.json   # Workspace settings
-    └── tasks.json      # Build and run tasks
+├── main.py                 # Main application file with QtPDFViewer
+├── projector_view.py       # ProjectorView - presentation window
+├── slide_organizer.py      # SlideOrganizer and SlideThumbnail classes
+├── notes.py                # Notes - speaker notes editor
+├── timer.py                # PauseableTimer - presentation timer
+├── pdf_view.py             # PDFView - legacy PDF view widget
+├── pyproject.toml          # Project configuration and dependencies
+├── uv.lock                 # Lockfile for reproducible installs
+├── PROJECT_STRUCTURE.md    # Detailed project organization
+├── README.md               # This file
+└── .vscode/                # VSCode configuration
+    ├── launch.json         # Debug configurations
+    ├── settings.json       # Workspace settings
+    └── tasks.json          # Build and run tasks
 ```
 
 ## License

@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-pdfpresenter = "pdfpresenter:main"
+pdfpresenter = "main:main"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/pdfpresenter"
