@@ -73,8 +73,20 @@ class SlideOrganizer(ScrollArea):
 
         self.thumbnailWidgets: list[SlideThumbnail] = []
 
-        # Empty state card with better styling
+        # Create overlay widget for empty state
+        self.emptyOverlay = QtWidgets.QWidget(self)
+        self.emptyOverlay.setStyleSheet("background: transparent;")
+        overlayLayout = QtWidgets.QVBoxLayout(self.emptyOverlay)
+        overlayLayout.setContentsMargins(0, 0, 0, 0)
+        overlayLayout.addStretch()
+
+        # Center container
+        centerContainer = QtWidgets.QHBoxLayout()
+        centerContainer.addStretch()
+
+        # Empty state card
         self.emptyCard = CardWidget()
+        self.emptyCard.setFixedSize(400, 200)
         emptyLayout = QtWidgets.QVBoxLayout(self.emptyCard)
         emptyLayout.setContentsMargins(40, 40, 40, 40)
         emptyLayout.setSpacing(16)
@@ -87,7 +99,19 @@ class SlideOrganizer(ScrollArea):
         emptyText.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         emptyLayout.addWidget(emptyText)
 
-        self.flowLayout.addWidget(self.emptyCard)
+        centerContainer.addWidget(self.emptyCard)
+        centerContainer.addStretch()
+
+        overlayLayout.addLayout(centerContainer)
+        overlayLayout.addStretch()
+
+        self.emptyOverlay.show()
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        """Update overlay size when scroll area is resized."""
+        super().resizeEvent(event)
+        if hasattr(self, "emptyOverlay"):
+            self.emptyOverlay.setGeometry(self.rect())
 
     def _onFilesDropped(self, files: list[str]) -> None:
         """Handle files dropped on the drop widget."""
@@ -133,14 +157,13 @@ class SlideOrganizer(ScrollArea):
         self.thumbnailWidgets.clear()
         self.flowLayout.removeAllWidgets()
 
-        # Show empty card if no slides
+        # Show/hide empty overlay
         if not self.viewer.slideOrder:
-            self.flowLayout.addWidget(self.emptyCard)
-            self.emptyCard.show()
+            self.emptyOverlay.show()
+            self.emptyOverlay.raise_()
             return
-
-        # Hide empty card when we have slides
-        self.emptyCard.hide()
+        else:
+            self.emptyOverlay.hide()
 
         # Create thumbnail widgets
         for position, pageNum in enumerate(self.viewer.slideOrder):
