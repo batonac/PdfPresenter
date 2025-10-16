@@ -36,6 +36,7 @@ class QtPDFViewer(QtWidgets.QWidget):
         super().__init__(parent)
         self.pdfImages: dict[int, QtGui.QImage] = {}
         self.currentPage: int = 0
+        self.verticalOffset: float = 0.0  # 0.0 = top, 1.0 = bottom
         self.doc: Optional[qpageview.pdf.PdfDocument] = None
         self.pages: list[qpageview.pdf.PdfPage] = []
         self.initUI()
@@ -88,22 +89,20 @@ class QtPDFViewer(QtWidgets.QWidget):
         self.ptimer.stop()
 
     def renderImages(self) -> None:
-        """Render PDF pages to images for display."""
+        """Render PDF pages to images for display at full width."""
         self.pdfImages = {}
         if self.doc is None or not self.pages:
             return
 
         num_pages = len(self.pages)
 
-        # Get the window size to determine how to fit the page
+        # Get the window width - we'll render at full width
         target_width = self.presenterWindow.width()
-        target_height = self.presenterWindow.height()
 
-        # Render at high DPI for quality (independent of window size)
-        # This is the actual rendering resolution
-        render_dpi = 200.0  # High quality rendering DPI
+        # Render at high DPI for quality
+        render_dpi = 200.0
 
-        print(f"Rendering at {render_dpi} DPI for window: {target_width}x{target_height}")
+        print(f"Rendering at {render_dpi} DPI for width: {target_width}")
 
         for i in range(num_pages):
             print(f"Rendering Page {i+1}/{num_pages}")
@@ -113,7 +112,6 @@ class QtPDFViewer(QtWidgets.QWidget):
             page_size = page.pageSize()
 
             # Calculate the size at our high DPI
-            # Points to inches: divide by 72, then multiply by render_dpi
             render_width = int(page_size.width() / 72.0 * render_dpi)
             render_height = int(page_size.height() / 72.0 * render_dpi)
 
@@ -122,14 +120,9 @@ class QtPDFViewer(QtWidgets.QWidget):
                 page.document, page.pageNumber, render_dpi, render_dpi, render_width, render_height
             )
 
-            # Now scale the high-res image to fit in the window
-            # Calculate the scale to fit
-            scale_w = target_width / render_width
-            scale_h = target_height / render_height
-            scale = min(scale_w, scale_h)
-
-            # Scale down to window size with high-quality scaling
-            scaled_width = int(render_width * scale)
+            # Scale to fit the target width (maintain aspect ratio)
+            scale = target_width / render_width
+            scaled_width = target_width
             scaled_height = int(render_height * scale)
 
             scaled_image = image.scaled(
@@ -160,16 +153,45 @@ class QtPDFViewer(QtWidgets.QWidget):
             self.notes.show(self.currentPage)
 
     def prevPage(self) -> None:
-        if self.currentPage > 0:
+        """Navigate to previous page or scroll up if at top of tall page."""
+        if self.verticalOffset > 0.0:
+            # Scroll up on current page
+            self.verticalOffset = 0.0
+            self.update()
+            self.presenterWindow.update()
+        elif self.currentPage > 0:
+            # Go to previous page
             self.currentPage -= 1
+            # Start at bottom of previous page if it's tall
+            if self._isPageTall(self.currentPage):
+                self.verticalOffset = 1.0
+            else:
+                self.verticalOffset = 0.0
             self.update()
             self.notes.show(self.currentPage)
+            self.presenterWindow.update()
 
     def nextPage(self) -> None:
-        if self.pages and self.currentPage + 1 < len(self.pages):
+        """Navigate to next page or scroll down if not at bottom of tall page."""
+        if self._isPageTall(self.currentPage) and self.verticalOffset < 1.0:
+            # Scroll to bottom of current page
+            self.verticalOffset = 1.0
+            self.update()
+            self.presenterWindow.update()
+        elif self.pages and self.currentPage + 1 < len(self.pages):
+            # Go to next page
             self.currentPage += 1
+            self.verticalOffset = 0.0  # Start at top
             self.update()
             self.notes.show(self.currentPage)
+            self.presenterWindow.update()
+
+    def _isPageTall(self, pageNum: int) -> bool:
+        """Check if a page is taller than the presentation window."""
+        if pageNum not in self.pdfImages:
+            return False
+        image = self.pdfImages[pageNum]
+        return image.height() > self.presenterWindow.height()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         if event.key() == QtCore.Qt.Key.Key_S and (
@@ -241,24 +263,28 @@ class ProjectorView(QtWidgets.QMainWindow):
 
         if self.viewer.currentPage in self.viewer.pdfImages:
             image = self.viewer.pdfImages[self.viewer.currentPage]
+            window_width = self.width()
+            window_height = self.height()
+            image_width = image.width()
+            image_height = image.height()
 
-            # Use the same scaling approach as PDFView for consistency
-            target = QtCore.QRectF(0, 0, self.width(), self.height())
-            source = QtCore.QRectF(0, 0, image.width(), image.height())
+            # Always render at full width
+            if image_height <= window_height:
+                # Image fits in window - center it vertically
+                y_offset = (window_height - image_height) / 2
+                source_rect = QtCore.QRectF(0, 0, image_width, image_height)
+                dest_rect = QtCore.QRectF(0, y_offset, image_width, image_height)
+            else:
+                # Image is taller than window - show portion based on verticalOffset
+                # verticalOffset: 0.0 = show top, 1.0 = show bottom
+                visible_height = window_height
+                max_offset = image_height - window_height
+                y_source = max_offset * self.viewer.verticalOffset
 
-            # Calculate scaling to fit
-            scale_w = target.width() / source.width()
-            scale_h = target.height() / source.height()
-            scale = min(scale_w, scale_h)
+                source_rect = QtCore.QRectF(0, y_source, image_width, visible_height)
+                dest_rect = QtCore.QRectF(0, 0, image_width, visible_height)
 
-            # Center the image
-            scaled_w = source.width() * scale
-            scaled_h = source.height() * scale
-            x = (target.width() - scaled_w) / 2
-            y = (target.height() - scaled_h) / 2
-
-            dest_rect = QtCore.QRectF(x, y, scaled_w, scaled_h)
-            painter.drawImage(dest_rect, image)
+            painter.drawImage(dest_rect, image, source_rect)
 
     def toggleFullscreen(self) -> None:
         if self.isFullScreen():
