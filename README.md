@@ -4,11 +4,13 @@ A PDF presentation tool with presenter view, notes, and timer functionality buil
 
 ## Features
 
-- Dual window display (presenter view and projection view)
+- **Editor Mode**: Organize slides, reorder, and remove pages before presenting
+- **Presentation Mode**: Dual window display (presenter view and projection view)
 - Speaker notes with autosave
 - Built-in timer
 - Keyboard shortcuts for navigation
 - Full-screen presentation mode
+- Click-to-jump slide navigation
 
 ## Requirements
 
@@ -57,14 +59,30 @@ Or run the script directly:
 uv run python main.py
 ```
 
+### Workflow
+
+1. **Editor Mode** (opens by default):
+   - Click "Import File" to load a PDF
+   - Drag and drop thumbnails to reorder slides
+   - Click "Remove Page" to delete the selected slide
+   - Click "Present" to start presentation mode
+
+2. **Presentation Mode**:
+   - Presenter view shows current slide preview, notes, and timer
+   - Projector window shows full-screen slides
+   - Click slides in editor to jump during presentation
+
 ### Keyboard Shortcuts
 
-- **O**: Open PDF file
+**Editor Mode:**
+- **Ctrl+O**: Import PDF file
+
+**Presentation Mode:**
 - **Left Arrow**: Previous slide
 - **Right Arrow**: Next slide
-- **F11** or **F**: Toggle fullscreen
+- **F11** or **F**: Toggle fullscreen (projector window)
 - **Ctrl+S**: Save notes
-- **Q**: Quit (from projection window)
+- **Escape** or **Q**: Exit presentation mode
 
 ## Development
 
@@ -119,8 +137,10 @@ uv sync
 
 ```
 PdfPresenter/
-├── main.py                 # Main application file with QtPDFViewer
-├── projector_view.py       # ProjectorView - presentation window
+├── main.py                 # Application entry point
+├── editor_window.py        # EditorWindow - organize slides before presenting
+├── presentation_window.py  # PresentationWindow and ProjectorWindow
+├── projector_view.py       # Legacy projector view (deprecated)
 ├── slide_organizer.py      # SlideOrganizer and SlideThumbnail classes
 ├── notes.py                # Notes - speaker notes editor
 ├── timer.py                # PauseableTimer - presentation timer

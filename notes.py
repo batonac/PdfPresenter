@@ -17,19 +17,18 @@ from __future__ import annotations
 
 import codecs
 import os.path
-from typing import Optional
 
 from PyQt6 import QtWidgets
 
 
 class Notes(QtWidgets.QTextEdit):
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.notes: dict[str, str] = {}
-        self.notesfile: Optional[str] = None
+        self.notesfile: str | None = None
+        self.current: str | None = None
         self.setReadOnly(True)
         self.setFontPointSize(16)
-        self.current: Optional[str] = None
         self.textChanged.connect(self.textEdited)
 
     def read(self, filename: str) -> None:

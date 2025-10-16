@@ -15,26 +15,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 if TYPE_CHECKING:
-    from main import QtPDFViewer
+    from editor_window import EditorWindow
+    from presentation_window import PresentationWindow
+
+
+class ViewerProtocol(Protocol):
+    """Protocol for objects that can be viewed by SlideOrganizer."""
+
+    slideOrder: list[int]
+    thumbnails: dict[int, QtGui.QImage]
+    presentationWindow: PresentationWindow | None
+    currentPage: int
+
+    def update(self) -> None: ...
 
 
 class SlideOrganizer(QtWidgets.QScrollArea):
     """Grid view of slides with drag-and-drop reordering."""
 
-    def __init__(self, viewer: QtPDFViewer):
+    def __init__(self, viewer: ViewerProtocol) -> None:
         super().__init__()
-        self.viewer = viewer
+        self.viewer: ViewerProtocol = viewer
+        self.selectedPosition: int | None = None
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Container widget with flow layout
-        self.container = QtWidgets.QWidget()
-        self.gridLayout = QtWidgets.QGridLayout(self.container)
+        self.container: QtWidgets.QWidget = QtWidgets.QWidget()
+        self.gridLayout: QtWidgets.QGridLayout = QtWidgets.QGridLayout(self.container)
         self.gridLayout.setSpacing(10)
         self.setWidget(self.container)
 
@@ -65,21 +78,27 @@ class SlideOrganizer(QtWidgets.QScrollArea):
             self.gridLayout.addWidget(thumb, row, col)
             self.thumbnailWidgets.append(thumb)
 
-        if self.viewer.currentPage < len(self.thumbnailWidgets):
-            self.thumbnailWidgets[self.viewer.currentPage].setSelected(True)
+        if self.selectedPosition is not None and self.selectedPosition < len(self.thumbnailWidgets):
+            self.thumbnailWidgets[self.selectedPosition].setSelected(True)
 
     def setCurrentSlide(self, position: int) -> None:
         """Highlight the current slide."""
+        self.selectedPosition = position
         for i, widget in enumerate(self.thumbnailWidgets):
             widget.setSelected(i == position)
 
+    def getSelectedPosition(self) -> int | None:
+        """Get the currently selected slide position."""
+        return self.selectedPosition
+
     def onSlideClicked(self, position: int) -> None:
         """Jump to clicked slide."""
-        self.viewer.currentPage = position
-        self.viewer.verticalOffset = 0.0
-        self.viewer.presenterWindow.update()
-        self.viewer.notes.show(self.viewer.getCurrentSlideIndex())
+        self.selectedPosition = position
         self.setCurrentSlide(position)
+
+        # If we're in a presentation, jump to this slide
+        if hasattr(self.viewer, "presentationWindow") and self.viewer.presentationWindow:
+            self.viewer.presentationWindow.jumpToSlide(position)
 
     def onMoveSlide(self, fromPos: int, toPos: int) -> None:
         """Move slide from one position to another."""
@@ -109,7 +128,9 @@ class SlideOrganizer(QtWidgets.QScrollArea):
                 self.viewer.currentPage -= 1
 
             self.updateThumbnails()
-            self.viewer.presenterWindow.update()
+            # Only update if there's a presentation window
+            if hasattr(self.viewer, "presentationWindow") and self.viewer.presentationWindow:
+                self.viewer.presentationWindow.projectorWindow.update()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
@@ -125,12 +146,13 @@ class SlideThumbnail(QtWidgets.QFrame):
     moveRequested = QtCore.pyqtSignal(int, int)  # from, to
     deleteRequested = QtCore.pyqtSignal(int)  # position
 
-    def __init__(self, viewer: QtPDFViewer, position: int, pageNum: int):
+    def __init__(self, viewer: ViewerProtocol, position: int, pageNum: int) -> None:
         super().__init__()
-        self.viewer = viewer
-        self.position = position
-        self.pageNum = pageNum
-        self.selected = False
+        self.viewer: ViewerProtocol = viewer
+        self.position: int = position
+        self.pageNum: int = pageNum
+        self.selected: bool = False
+        self.dragStartPosition: QtCore.QPoint = QtCore.QPoint()
 
         self.setFrameStyle(QtWidgets.QFrame.Shape.Box)
         self.setLineWidth(2)

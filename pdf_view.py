@@ -15,19 +15,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 if TYPE_CHECKING:
-    from main import QtPDFViewer
+    pass
+
+
+class ViewerProtocol(Protocol):
+    """Protocol for objects that can be viewed by PDFView."""
+
+    currentPage: int
+    pdfImages: dict[int, QtGui.QImage]
 
 
 class PDFView(QtWidgets.QWidget):
-    def __init__(self, offset: int, viewer: QtPDFViewer):
-        super().__init__(viewer)
-        self.offset = offset
-        self.viewer = viewer
+    def __init__(self, offset: int, viewer: ViewerProtocol) -> None:
+        super().__init__()
+        self.offset: int = offset
+        self.viewer: ViewerProtocol = viewer
 
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(600, 600)

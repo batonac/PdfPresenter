@@ -13,16 +13,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import annotations
+
 import threading
 import time
+from typing import Callable
 
 
 class PauseableTimer:
-    def __init__(self, updatefunc):
+    def __init__(self, updatefunc: Callable[[str], None]) -> None:
         self.old_seconds: float = 0.0
         self.reference: float = 0.0
         self.enable: bool = False
-        self.updatefunc = updatefunc
+        self.updatefunc: Callable[[str], None] = updatefunc
 
     def incrementer(self) -> None:
         self.updatefunc(self.formatTime(time.time() - self.reference + self.old_seconds))
