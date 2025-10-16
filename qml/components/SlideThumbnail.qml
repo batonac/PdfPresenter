@@ -20,28 +20,10 @@ Rectangle {
     border.color: isSelected ? "#0078D4" : "#E1DFDD"
     border.width: isSelected ? 2 : 1
     
-    // Shadow effect
-    layer.enabled: true
-    layer.effect: ShaderEffect {
-        property real spread: 0.1
-        fragmentShader: "
-            varying highp vec2 qt_TexCoord0;
-            uniform sampler2D source;
-            uniform lowp float qt_Opacity;
-            uniform lowp float spread;
-            void main() {
-                lowp vec4 color = texture2D(source, qt_TexCoord0);
-                gl_FragColor = color * qt_Opacity;
-            }
-        "
-    }
-    
-    FlexboxLayout {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
-        flow: FlexboxLayout.TopToBottom
-        alignItems: FlexboxLayout.AlignCenter
-        rowGap: 8
+        spacing: 8
         
         // Slide number
         Text {
@@ -49,13 +31,15 @@ Rectangle {
             font.pixelSize: 14
             font.bold: true
             color: "#1F1F1F"
-            Layout.alignment: FlexboxLayout.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter
         }
         
         // Thumbnail image
         Rectangle {
             width: 200
             height: 282  // 200 * 1.41 aspect ratio
+            Layout.preferredWidth: 200
+            Layout.preferredHeight: 282
             color: "#F3F3F3"
             
             Image {
@@ -82,6 +66,7 @@ Rectangle {
             text: "Delete"
             Layout.preferredWidth: 200
             Layout.preferredHeight: 32
+            Layout.alignment: Qt.AlignHCenter
             
             background: Rectangle {
                 color: parent.hovered ? "#F3F3F3" : "white"

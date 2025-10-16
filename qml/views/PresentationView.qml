@@ -20,18 +20,16 @@ Window {
         }
     }
 
-    FlexboxLayout {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
-        flow: FlexboxLayout.TopToBottom
-        rowGap: 16
+        spacing: 16
 
         // Top row: Preview and Timer
-        FlexboxLayout {
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            flow: FlexboxLayout.LeftToRight
-            columnGap: 16
+            spacing: 16
 
             // Preview card
             Rectangle {
@@ -42,11 +40,10 @@ Window {
                 border.color: "#E1DFDD"
                 border.width: 1
 
-                FlexboxLayout {
+                ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    flow: FlexboxLayout.TopToBottom
-                    rowGap: 12
+                    spacing: 12
 
                     Text {
                         text: "Current Slide"
@@ -91,18 +88,17 @@ Window {
                 border.color: "#E1DFDD"
                 border.width: 1
 
-                FlexboxLayout {
+                ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    flow: FlexboxLayout.TopToBottom
-                    alignItems: FlexboxLayout.AlignCenter
-                    rowGap: 12
+                    spacing: 12
 
                     Text {
                         text: "Timer"
                         font.pixelSize: 16
                         font.bold: true
                         color: "#1F1F1F"
+                        Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
@@ -111,11 +107,12 @@ Window {
                         font.bold: true
                         font.family: "monospace"
                         color: "#0078D4"
+                        Layout.alignment: Qt.AlignHCenter
                     }
 
-                    FlexboxLayout {
-                        flow: FlexboxLayout.LeftToRight
-                        columnGap: 8
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 8
 
                         Button {
                             text: "Start"
@@ -168,11 +165,10 @@ Window {
             border.color: "#E1DFDD"
             border.width: 1
 
-            FlexboxLayout {
+            ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 16
-                flow: FlexboxLayout.TopToBottom
-                rowGap: 12
+                spacing: 12
 
                 Text {
                     text: "Speaker Notes"

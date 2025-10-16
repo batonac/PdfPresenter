@@ -16,48 +16,45 @@ Item {
         border.width: 1
         visible: pdfBackend.slideCount === 0
 
-        FlexboxLayout {
+        ColumnLayout {
             anchors.fill: parent
             anchors.margins: 40
-            flow: FlexboxLayout.TopToBottom
-            justifyContent: FlexboxLayout.JustifyCenter
-            alignItems: FlexboxLayout.AlignCenter
+            spacing: 16
 
             Text {
                 text: "No slides loaded"
                 font.pixelSize: 18
                 font.bold: true
                 color: "#1F1F1F"
-                Layout.alignment: FlexboxLayout.AlignHCenter
+                Layout.alignment: Qt.AlignHCenter
             }
 
             Text {
                 text: "Drop PDF files here or use 'Import PDF' to get started"
                 font.pixelSize: 13
                 color: "#605E5C"
-                Layout.alignment: FlexboxLayout.AlignHCenter
-                Layout.topMargin: 8
+                Layout.alignment: Qt.AlignHCenter
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
             }
         }
     }
 
-    // Slide grid with FlexboxLayout
+    // Slide grid using Flow
     ScrollView {
         anchors.fill: parent
+        anchors.bottomMargin: 50
         visible: pdfBackend.slideCount > 0
         clip: true
         
-        FlexboxLayout {
+        Flow {
             id: slideGrid
             width: parent.width
-            flow: FlexboxLayout.LeftToRight
-            wrap: FlexboxLayout.Wrap
-            justifyContent: FlexboxLayout.JustifyStart
-            padding: 20
-            columnGap: 20
-            rowGap: 20
+            spacing: 20
+            leftPadding: 20
+            rightPadding: 20
+            topPadding: 20
+            bottomPadding: 20
 
             Repeater {
                 model: pdfBackend.slideModel
@@ -90,18 +87,17 @@ Item {
         border.color: "#E1DFDD"
         border.width: 1
 
-        FlexboxLayout {
+        RowLayout {
             anchors.fill: parent
             anchors.rightMargin: 20
-            flow: FlexboxLayout.LeftToRight
-            justifyContent: FlexboxLayout.JustifyEnd
-            alignItems: FlexboxLayout.AlignCenter
+            spacing: 8
+            layoutDirection: Qt.RightToLeft
 
             Text {
-                text: "Thumbnail Size:"
+                text: Math.round(sizeSlider.value) + "px"
                 color: "#605E5C"
                 font.pixelSize: 12
-                Layout.rightMargin: 8
+                Layout.preferredWidth: 50
             }
 
             Slider {
@@ -114,11 +110,9 @@ Item {
             }
 
             Text {
-                text: Math.round(sizeSlider.value) + "px"
+                text: "Thumbnail Size:"
                 color: "#605E5C"
                 font.pixelSize: 12
-                Layout.preferredWidth: 50
-                Layout.leftMargin: 8
             }
         }
     }

@@ -30,11 +30,11 @@ ApplicationWindow {
         pdfBackend.presentationMode = false
     }
 
-    // Main content area using FlexboxLayout
-    FlexboxLayout {
+    // Main content area using RowLayout
+    RowLayout {
         id: mainLayout
         anchors.fill: parent
-        flow: FlexboxLayout.LeftToRight
+        spacing: 0
 
         // Navigation sidebar
         Rectangle {
@@ -50,10 +50,10 @@ ApplicationWindow {
                 color: root.borderColor
             }
 
-            FlexboxLayout {
+            ColumnLayout {
                 anchors.fill: parent
-                flow: FlexboxLayout.TopToBottom
                 anchors.margins: 8
+                spacing: 8
 
                 // Header
                 Text {
@@ -61,7 +61,7 @@ ApplicationWindow {
                     font.pixelSize: 20
                     font.bold: true
                     color: root.textColor
-                    Layout.alignment: FlexboxLayout.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 12
                     Layout.bottomMargin: 12
                 }
@@ -117,12 +117,12 @@ ApplicationWindow {
                 }
 
                 // Actions
-                FlexboxLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    flow: FlexboxLayout.TopToBottom
                     Layout.leftMargin: 8
                     Layout.rightMargin: 8
                     Layout.topMargin: 8
+                    spacing: 2
 
                     NavButton {
                         text: "➕ Import PDF"

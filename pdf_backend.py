@@ -26,10 +26,6 @@ from PySide6.QtPdf import QPdfDocument
 from timer import PauseableTimer
 
 
-QML_IMPORT_NAME = "PdfPresenter"
-QML_IMPORT_MAJOR_VERSION = 1
-
-
 class SlideImageProvider(QtQuick.QQuickImageProvider):
     """Image provider for slide thumbnails."""
 
@@ -74,7 +70,6 @@ class ProjectionImageProvider(QtQuick.QQuickImageProvider):
         return QtGui.QImage(), QtCore.QSize()
 
 
-@QtQml.QmlElement
 class SlideModel(QtCore.QAbstractListModel):
     """Model for the slide list."""
 
@@ -133,7 +128,6 @@ class SlideModel(QtCore.QAbstractListModel):
             self.endRemoveRows()
 
 
-@QtQml.QmlElement
 class PdfBackend(QtCore.QObject):
     """Backend for PDF presentation logic."""
 
@@ -216,8 +210,8 @@ class PdfBackend(QtCore.QObject):
             self.currentNotesChanged.emit()
             self._saveNote()
 
-    @Property(QtCore.QAbstractListModel, constant=True)
-    def slideModel(self) -> QtCore.QAbstractListModel:
+    @Property("QVariant", constant=True)
+    def slideModel(self):
         return self._slideModel
 
     @Property(int, notify=slideOrderChanged)
