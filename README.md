@@ -1,11 +1,12 @@
 # PDF Presenter
 
-A PDF presentation tool with presenter view, notes, and timer functionality built with PyQt6.
+A PDF presentation tool with presenter view, notes, and timer functionality built with PySide6 and PyQt-Fluent-Widgets.
 
 ## Features
 
 - **Editor Mode**: Organize slides, reorder, and remove pages before presenting
 - **Presentation Mode**: Dual window display (presenter view and projection view)
+- **Modern UI**: Fluent Design System with PyQt-Fluent-Widgets
 - Speaker notes with autosave
 - Built-in timer
 - Keyboard shortcuts for navigation
@@ -16,8 +17,9 @@ A PDF presentation tool with presenter view, notes, and timer functionality buil
 
 - Python 3.10 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
-- PyQt6
-- qpageview (modern PDF rendering library for Qt6)
+- PySide6
+- PySide6-Fluent-Widgets
+- PyMuPDF (fitz) for PDF rendering
 
 ## Installation
 
@@ -43,9 +45,12 @@ uv sync --all-extras
 
 ## Technical Notes
 
-This application uses `qpageview` for PDF rendering, which is a modern Qt6-compatible library. 
-The original `python-poppler-qt` bindings were never officially ported to Qt6, so `qpageview` 
-provides a clean alternative with better Qt6 integration.
+This application uses:
+- **PySide6** for Qt6 bindings (official Qt support)
+- **PySide6-Fluent-Widgets** for modern Fluent Design UI components
+- **PyMuPDF** (fitz) for fast PDF rendering with excellent Qt6 compatibility
+
+PyMuPDF provides high-performance PDF rendering and is fully compatible with PySide6, making it the ideal choice for this application.
 
 ## Usage
 
@@ -140,7 +145,6 @@ PdfPresenter/
 ├── main.py                 # Application entry point
 ├── editor_window.py        # EditorWindow - organize slides before presenting
 ├── presentation_window.py  # PresentationWindow and ProjectorWindow
-├── projector_view.py       # Legacy projector view (deprecated)
 ├── slide_organizer.py      # SlideOrganizer and SlideThumbnail classes
 ├── notes.py                # Notes - speaker notes editor
 ├── timer.py                # PauseableTimer - presentation timer

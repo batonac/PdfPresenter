@@ -13,25 +13,43 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+# DEPRECATED: This file is no longer used in the application.
+# See presentation_window.py for the current implementation of ProjectorWindow.
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 if TYPE_CHECKING:
-    from main import QtPDFViewer
+    pass
+
+
+class ViewerProtocol(Protocol):
+    """Protocol for legacy viewer interface."""
+
+    pdfImages: dict[int, QtGui.QImage]
+    verticalOffset: float
+
+    def getCurrentSlideIndex(self) -> int: ...
+    def renderImages(self) -> None: ...
+    def showFileDialog(self) -> None: ...
+    def prevPage(self) -> None: ...
+    def nextPage(self) -> None: ...
+    def close(self) -> None: ...
 
 
 class ProjectorView(QtWidgets.QMainWindow):
-    def __init__(self, viewer: QtPDFViewer):
-        super().__init__(viewer)
+    """DEPRECATED: Legacy projector view - use ProjectorWindow from presentation_window.py instead."""
+
+    def __init__(self, viewer: ViewerProtocol):
+        super().__init__()
         self.viewer = viewer
         self.initUI()
 
     def initUI(self) -> None:
         self.resize(640, 480)
-
         self.setWindowTitle("QtPDFPresenter - Presentation Window")
 
         p = QtGui.QPalette()
@@ -81,7 +99,6 @@ class ProjectorView(QtWidgets.QMainWindow):
         elif event.key() == QtCore.Qt.Key.Key_Q:
             self.close()
             self.viewer.close()
-            self.viewer.ptimer.stop()
         elif event.key() == QtCore.Qt.Key.Key_O:
             self.viewer.showFileDialog()
         elif event.key() == QtCore.Qt.Key.Key_Left:

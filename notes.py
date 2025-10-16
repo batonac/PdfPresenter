@@ -18,7 +18,7 @@ from __future__ import annotations
 import codecs
 import os.path
 
-from PyQt6 import QtWidgets
+from PySide6 import QtWidgets
 
 
 class Notes(QtWidgets.QTextEdit):

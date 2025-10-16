@@ -17,7 +17,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+import fitz  # PyMuPDF
+from PySide6 import QtCore, QtGui, QtWidgets
+from qfluentwidgets import PushButton
 
 from notes import Notes
 from timer import PauseableTimer
@@ -55,8 +57,8 @@ class PresentationWindow(QtWidgets.QWidget):
         # Timer and controls
         self.uhr = QtWidgets.QLCDNumber()
         self.uhr.display("00:00")
-        bStart = QtWidgets.QPushButton("Start")
-        bStop = QtWidgets.QPushButton("Stop")
+        bStart = PushButton("Start")
+        bStop = PushButton("Stop")
         bStart.clicked.connect(self.startButton)
         bStop.clicked.connect(self.stopButton)
 
@@ -109,43 +111,42 @@ class PresentationWindow(QtWidgets.QWidget):
     def renderFullSizeImages(self) -> None:
         """Render PDF pages at full resolution for projection."""
         self.pdfImages = {}
-        if not self.editor.pages:
+        if self.editor.doc is None:
             return
 
         # Use primary screen size as target
         screen = QtWidgets.QApplication.primaryScreen()
         if screen:
             target_width = screen.size().width()
+            target_height = screen.size().height()
         else:
             target_width = 1920
+            target_height = 1080
 
-        render_dpi = 200.0
-        num_pages = len(self.editor.pages)
+        num_pages = len(self.editor.doc)
 
         for i in range(num_pages):
-            page = self.editor.pages[i]
-            page_size = page.pageSize()
+            page = self.editor.doc[i]
+            page_rect = page.rect
 
-            render_width = int(page_size.width() / 72.0 * render_dpi)
-            render_height = int(page_size.height() / 72.0 * render_dpi)
+            # Calculate zoom to fit screen width
+            zoom_x = target_width / page_rect.width
+            zoom_y = target_height / page_rect.height
+            # Use the smaller zoom to ensure the page fits
+            zoom = min(zoom_x, zoom_y)
 
-            image = page.renderer._render_image(
-                page.document, page.pageNumber, render_dpi, render_dpi, render_width, render_height
+            mat = fitz.Matrix(zoom, zoom)
+
+            # Render page to pixmap
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+
+            # Convert PyMuPDF pixmap to QImage
+            img_data = pix.samples
+            qimage = QtGui.QImage(
+                img_data, pix.width, pix.height, pix.stride, QtGui.QImage.Format.Format_RGB888
             )
 
-            # Scale to target width
-            scale = target_width / render_width
-            scaled_width = target_width
-            scaled_height = int(render_height * scale)
-
-            scaled_image = image.scaled(
-                scaled_width,
-                scaled_height,
-                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
-                QtCore.Qt.TransformationMode.SmoothTransformation,
-            )
-
-            self.pdfImages[i] = scaled_image
+            self.pdfImages[i] = qimage.copy()
 
     def getCurrentSlideIndex(self) -> int:
         """Get the actual page number for the current presentation position."""

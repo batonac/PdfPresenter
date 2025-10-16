@@ -39,7 +39,6 @@ The application is split into two modes: Editor Mode for organizing slides, and 
 
 ### Legacy Modules
 
-- **`projector_view.py`** - Contains the legacy `ProjectorView` class (deprecated, replaced by ProjectorWindow)
 - **`pdf_view.py`** - Contains the `PDFView` class (legacy, currently unused)
 
 ## Application Flow

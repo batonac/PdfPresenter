@@ -17,7 +17,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
+from qfluentwidgets import BodyLabel, PushButton, Slider
 
 if TYPE_CHECKING:
     from editor_window import EditorWindow
@@ -148,23 +149,19 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         # Add stretch to push controls to the right
         controlLayout.addStretch()
 
-        label = QtWidgets.QLabel("Thumbnail Size:")
-        label.setStyleSheet("color: #333; font-size: 11px;")
+        label = BodyLabel("Thumbnail Size:")
         controlLayout.addWidget(label)
 
-        self.sizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.sizeSlider = Slider(QtCore.Qt.Orientation.Horizontal, self)
         self.sizeSlider.setMinimum(100)
         self.sizeSlider.setMaximum(400)
         self.sizeSlider.setValue(200)
-        self.sizeSlider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
-        self.sizeSlider.setTickInterval(50)
         self.sizeSlider.valueChanged.connect(self.onSizeChanged)
         self.sizeSlider.setMaximumWidth(200)
         controlLayout.addWidget(self.sizeSlider)
 
-        self.sizeLabel = QtWidgets.QLabel(f"{self.thumbnailSize}px")
+        self.sizeLabel = BodyLabel(f"{self.thumbnailSize}px")
         self.sizeLabel.setMinimumWidth(50)
-        self.sizeLabel.setStyleSheet("color: #333; font-size: 11px;")
         controlLayout.addWidget(self.sizeLabel)
 
         return controlWidget
@@ -265,9 +262,9 @@ class SlideOrganizer(QtWidgets.QScrollArea):
 class SlideThumbnail(QtWidgets.QWidget):
     """Individual slide thumbnail with drag-and-drop support."""
 
-    clicked = QtCore.pyqtSignal(int)  # position
-    moveRequested = QtCore.pyqtSignal(int, int)  # from, to
-    deleteRequested = QtCore.pyqtSignal(int)  # position
+    clicked = QtCore.Signal(int)  # position
+    moveRequested = QtCore.Signal(int, int)  # from, to
+    deleteRequested = QtCore.Signal(int)  # position
 
     def __init__(
         self, viewer: ViewerProtocol, position: int, pageNum: int, size: int = 200
@@ -286,11 +283,8 @@ class SlideThumbnail(QtWidgets.QWidget):
         layout.setSpacing(4)
 
         # Slide number label (above thumbnail)
-        self.numberLabel = QtWidgets.QLabel(f"{position + 1}")
+        self.numberLabel = BodyLabel(f"{position + 1}")
         self.numberLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.numberLabel.setStyleSheet(
-            "color: #666; font-size: 12px; font-weight: bold; background: transparent;"
-        )
         layout.addWidget(self.numberLabel)
 
         # Thumbnail container with border
@@ -308,27 +302,9 @@ class SlideThumbnail(QtWidgets.QWidget):
         layout.addWidget(self.thumbnailFrame)
 
         # Delete button (below thumbnail)
-        self.deleteBtn = QtWidgets.QPushButton("🗑")
-        self.deleteBtn.setFixedSize(size, 24)
+        self.deleteBtn = PushButton("🗑")
+        self.deleteBtn.setFixedSize(size, 28)
         self.deleteBtn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
-        self.deleteBtn.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #E74C3C;
-                color: white;
-                border: none;
-                border-radius: 3px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #C0392B;
-            }
-            QPushButton:pressed {
-                background-color: #A93226;
-            }
-        """
-        )
         self.deleteBtn.clicked.connect(lambda: self.deleteRequested.emit(self.position))
         layout.addWidget(self.deleteBtn)
 

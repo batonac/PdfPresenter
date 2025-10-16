@@ -17,8 +17,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qpageview.pdf
-from PyQt6 import QtCore, QtGui, QtWidgets
+import fitz  # PyMuPDF
+from PySide6 import QtCore, QtGui, QtWidgets
+from qfluentwidgets import Action, FluentIcon, MessageBox
 
 from slide_organizer import SlideOrganizer
 
@@ -34,8 +35,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.slideOrder: list[int] = []
         self.currentPage: int = 0  # Track current page for protocol compatibility
         self.currentFile: str | None = None
-        self.doc: qpageview.pdf.PdfDocument | None = None
-        self.pages: list[qpageview.pdf.PdfPage] = []
+        self.doc: fitz.Document | None = None
         self.presentationWindow: PresentationWindow | None = None
         self.slideOrganizer: SlideOrganizer
 
@@ -45,24 +45,48 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("PDF Presenter - Editor")
         self.resize(800, 600)
 
-        # Create toolbar
-        toolbar: QtWidgets.QToolBar = self.addToolBar("Main") or QtWidgets.QToolBar("Main")
+        # Create toolbar with Fluent-styled actions
+        toolbar = QtWidgets.QToolBar(self)
         toolbar.setIconSize(QtCore.QSize(32, 32))
+        toolbar.setMovable(False)
+        toolbar.setStyleSheet(
+            """
+            QToolBar {
+                background-color: #F3F3F3;
+                border-bottom: 1px solid #E0E0E0;
+                padding: 4px;
+                spacing: 8px;
+            }
+            QToolButton {
+                background-color: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 6px;
+            }
+            QToolButton:hover {
+                background-color: #E8E8E8;
+            }
+            QToolButton:pressed {
+                background-color: #D0D0D0;
+            }
+        """
+        )
+        self.addToolBar(toolbar)
 
         # Import file action
-        importAction = QtGui.QAction("Import File", self)
+        importAction = Action(FluentIcon.FOLDER, "Import File", self)
         importAction.triggered.connect(self.showFileDialog)
         toolbar.addAction(importAction)
 
         # Remove page action
-        removeAction = QtGui.QAction("Remove Page", self)
+        removeAction = Action(FluentIcon.DELETE, "Remove Page", self)
         removeAction.triggered.connect(self.removeSelectedPage)
         toolbar.addAction(removeAction)
 
         toolbar.addSeparator()
 
         # Present action
-        presentAction = QtGui.QAction("Present", self)
+        presentAction = Action(FluentIcon.PLAY, "Present", self)
         presentAction.triggered.connect(self.startPresentation)
         toolbar.addAction(presentAction)
 
@@ -92,43 +116,51 @@ class EditorWindow(QtWidgets.QMainWindow):
     def load(self, file: str) -> None:
         """Load a PDF document."""
         self.currentFile = file
-        self.doc = qpageview.pdf.PdfDocument(file)
-        self.pages = list(self.doc.pages())
-        self.slideOrder = list(range(len(self.pages)))
+        self.doc = fitz.open(file)
+        if self.doc is not None:
+            self.slideOrder = list(range(len(self.doc)))
         self.renderImages()
 
     def renderImages(self) -> None:
         """Render PDF pages to images for thumbnails."""
         self.pdfImages = {}
         self.thumbnails = {}
-        if self.doc is None or not self.pages:
+        if self.doc is None:
             return
 
-        num_pages = len(self.pages)
-        render_dpi = 150.0
+        num_pages = len(self.doc)
         thumb_width = 200
 
+        # Calculate DPI for thumbnail rendering
+        # PyMuPDF uses a matrix for scaling instead of DPI
+        # Standard PDF is 72 DPI, we want ~150 DPI for thumbnails
+        zoom = 150.0 / 72.0
+        mat = fitz.Matrix(zoom, zoom)
+
         for i in range(num_pages):
-            page = self.pages[i]
-            page_size = page.pageSize()
+            page = self.doc[i]
 
-            render_width = int(page_size.width() / 72.0 * render_dpi)
-            render_height = int(page_size.height() / 72.0 * render_dpi)
+            # Render page to pixmap
+            pix = page.get_pixmap(matrix=mat)
 
-            image = page.renderer._render_image(
-                page.document, page.pageNumber, render_dpi, render_dpi, render_width, render_height
+            # Convert PyMuPDF pixmap to QImage
+            img_data = pix.samples
+            qimage = QtGui.QImage(
+                img_data,
+                pix.width,
+                pix.height,
+                pix.stride,
+                QtGui.QImage.Format.Format_RGB888,
             )
 
-            # Create thumbnail
-            thumb_scale = thumb_width / render_width
-            thumb_height = int(render_height * thumb_scale)
-            thumbnail = image.scaled(
+            # Create thumbnail by scaling down
+            thumbnail = qimage.scaled(
                 thumb_width,
-                thumb_height,
+                int(thumb_width * pix.height / pix.width),
                 QtCore.Qt.AspectRatioMode.KeepAspectRatio,
                 QtCore.Qt.TransformationMode.SmoothTransformation,
             )
-            self.thumbnails[i] = thumbnail
+            self.thumbnails[i] = thumbnail.copy()
 
         self.slideOrganizer.updateThumbnails()
 
@@ -140,8 +172,8 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def startPresentation(self) -> None:
         """Launch the presentation window."""
-        if not self.currentFile or not self.pages:
-            QtWidgets.QMessageBox.warning(self, "No PDF Loaded", "Please import a PDF file first.")
+        if not self.currentFile or not self.doc:
+            MessageBox("No PDF Loaded", "Please import a PDF file first.", self).exec()
             return
 
         from presentation_window import PresentationWindow
