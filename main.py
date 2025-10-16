@@ -15,10 +15,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import sys
 import traceback
+from pathlib import Path
 
-from PySide6 import QtWidgets
+from PySide6 import QtCore, QtGui, QtQml, QtQuick
 
-from editor_window import EditorWindow
+from pdf_backend import PdfBackend
 
 
 def excepthook(exc_type, exc_value, exc_tb):
@@ -36,13 +37,44 @@ def main() -> None:
     sys.excepthook = excepthook
 
     print("Starting PDF Presenter...")
-    app = QtWidgets.QApplication(sys.argv)
-
+    
+    # Set application attributes
+    QtGui.QGuiApplication.setApplicationName("PDF Presenter")
+    QtGui.QGuiApplication.setOrganizationName("PdfPresenter")
+    
+    app = QtGui.QGuiApplication(sys.argv)
+    
     try:
-        print("Creating EditorWindow...")
-        editor = EditorWindow()
-        print("Showing EditorWindow...")
-        editor.show()
+        print("Creating QML engine...")
+        engine = QtQml.QQmlApplicationEngine()
+        
+        # Create backend
+        from pdf_backend import SlideImageProvider, ProjectionImageProvider
+        backend = PdfBackend()
+        
+        # Register image providers
+        slide_provider = SlideImageProvider(backend)
+        projection_provider = ProjectionImageProvider(backend)
+        engine.addImageProvider("slideimage", slide_provider)
+        engine.addImageProvider("thumbnail", slide_provider)
+        engine.addImageProvider("projection", projection_provider)
+        
+        # Register backend as context property
+        engine.rootContext().setContextProperty("pdfBackend", backend)
+        
+        # Register custom types
+        qml_import_path = Path(__file__).parent / "qml"
+        engine.addImportPath(str(qml_import_path))
+        
+        # Load main QML file
+        main_qml = qml_import_path / "Main.qml"
+        print(f"Loading QML from: {main_qml}")
+        engine.load(main_qml)
+        
+        if not engine.rootObjects():
+            print("Failed to load QML file")
+            sys.exit(1)
+        
         print("Entering event loop...")
         sys.exit(app.exec())
     except Exception as e:

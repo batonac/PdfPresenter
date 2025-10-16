@@ -1,0 +1,5 @@
+module PdfPresenter
+NavButton 1.0 components/NavButton.qml
+SlideOrganizer 1.0 components/SlideOrganizer.qml
+SlideThumbnail 1.0 components/SlideThumbnail.qml
+PresentationView 1.0 views/PresentationView.qml
