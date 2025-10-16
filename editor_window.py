@@ -66,9 +66,21 @@ class EditorWindow(QtWidgets.QMainWindow):
         presentAction.triggered.connect(self.startPresentation)
         toolbar.addAction(presentAction)
 
+        # Main widget container
+        centralWidget = QtWidgets.QWidget()
+        mainLayout = QtWidgets.QVBoxLayout(centralWidget)
+        mainLayout.setContentsMargins(0, 0, 0, 0)
+        mainLayout.setSpacing(0)
+
         # Slide organizer
         self.slideOrganizer = SlideOrganizer(self)
-        self.setCentralWidget(self.slideOrganizer)
+        mainLayout.addWidget(self.slideOrganizer, 1)
+
+        # Add size control at bottom
+        sizeControl = self.slideOrganizer.createSizeControl()
+        mainLayout.addWidget(sizeControl)
+
+        self.setCentralWidget(centralWidget)
 
     def showFileDialog(self) -> None:
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(

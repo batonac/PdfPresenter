@@ -28,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "pyqt6>=6.9.1",
+    "pyside6-fluent-widgets>=1.9.1",
     "qpageview>=1.0.1",
 ]
 

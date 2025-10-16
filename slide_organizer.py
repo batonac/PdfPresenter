@@ -35,6 +35,82 @@ class ViewerProtocol(Protocol):
     def update(self) -> None: ...
 
 
+class FlowLayout(QtWidgets.QLayout):
+    """A flow layout that wraps items left-to-right, top-to-bottom."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.itemList: list[QtWidgets.QLayoutItem] = []
+        self.spacing_h: int = 20
+        self.spacing_v: int = 20
+
+    def addItem(self, item: QtWidgets.QLayoutItem) -> None:
+        self.itemList.append(item)
+
+    def count(self) -> int:
+        return len(self.itemList)
+
+    def itemAt(self, index: int) -> QtWidgets.QLayoutItem | None:
+        if 0 <= index < len(self.itemList):
+            return self.itemList[index]
+        return None
+
+    def takeAt(self, index: int) -> QtWidgets.QLayoutItem | None:
+        if 0 <= index < len(self.itemList):
+            return self.itemList.pop(index)
+        return None
+
+    def expandingDirections(self) -> QtCore.Qt.Orientation:
+        return QtCore.Qt.Orientation(0)
+
+    def hasHeightForWidth(self) -> bool:
+        return True
+
+    def heightForWidth(self, width: int) -> int:
+        return self._doLayout(QtCore.QRect(0, 0, width, 0), True)
+
+    def setGeometry(self, rect: QtCore.QRect) -> None:
+        super().setGeometry(rect)
+        self._doLayout(rect, False)
+
+    def sizeHint(self) -> QtCore.QSize:
+        return self.minimumSize()
+
+    def minimumSize(self) -> QtCore.QSize:
+        size = QtCore.QSize()
+        for item in self.itemList:
+            size = size.expandedTo(item.minimumSize())
+        return size
+
+    def _doLayout(self, rect: QtCore.QRect, testOnly: bool) -> int:
+        x = rect.x()
+        y = rect.y()
+        lineHeight = 0
+
+        for item in self.itemList:
+            widget = item.widget()
+            if widget is None:
+                continue
+
+            spaceX = self.spacing_h
+            spaceY = self.spacing_v
+            nextX = x + item.sizeHint().width() + spaceX
+
+            if nextX - spaceX > rect.right() and lineHeight > 0:
+                x = rect.x()
+                y = y + lineHeight + spaceY
+                nextX = x + item.sizeHint().width() + spaceX
+                lineHeight = 0
+
+            if not testOnly:
+                item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
+
+            x = nextX
+            lineHeight = max(lineHeight, item.sizeHint().height())
+
+        return y + lineHeight - rect.y()
+
+
 class SlideOrganizer(QtWidgets.QScrollArea):
     """Grid view of slides with drag-and-drop reordering."""
 
@@ -42,16 +118,63 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         super().__init__()
         self.viewer: ViewerProtocol = viewer
         self.selectedPosition: int | None = None
+        self.thumbnailSize: int = 200  # Default thumbnail width
+
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        # Set light background like PowerPoint
+        self.setStyleSheet("QScrollArea { background-color: #F3F3F3; border: none; }")
 
         # Container widget with flow layout
         self.container: QtWidgets.QWidget = QtWidgets.QWidget()
-        self.gridLayout: QtWidgets.QGridLayout = QtWidgets.QGridLayout(self.container)
-        self.gridLayout.setSpacing(10)
+        self.container.setStyleSheet("background-color: #F3F3F3;")
+        self.flowLayout: FlowLayout = FlowLayout(self.container)
+        self.flowLayout.spacing_h = 20
+        self.flowLayout.spacing_v = 20
+        self.container.setLayout(self.flowLayout)
         self.setWidget(self.container)
 
         self.thumbnailWidgets: list[SlideThumbnail] = []
+
+    def createSizeControl(self) -> QtWidgets.QWidget:
+        """Create the thumbnail size slider control as a separate widget."""
+        controlWidget = QtWidgets.QWidget()
+        controlWidget.setStyleSheet("background-color: #E8E8E8; border-top: 1px solid #CCC;")
+        controlLayout = QtWidgets.QHBoxLayout(controlWidget)
+        controlLayout.setContentsMargins(10, 8, 10, 8)
+
+        # Add stretch to push controls to the right
+        controlLayout.addStretch()
+
+        label = QtWidgets.QLabel("Thumbnail Size:")
+        label.setStyleSheet("color: #333; font-size: 11px;")
+        controlLayout.addWidget(label)
+
+        self.sizeSlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.sizeSlider.setMinimum(100)
+        self.sizeSlider.setMaximum(400)
+        self.sizeSlider.setValue(200)
+        self.sizeSlider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.sizeSlider.setTickInterval(50)
+        self.sizeSlider.valueChanged.connect(self.onSizeChanged)
+        self.sizeSlider.setMaximumWidth(200)
+        controlLayout.addWidget(self.sizeSlider)
+
+        self.sizeLabel = QtWidgets.QLabel(f"{self.thumbnailSize}px")
+        self.sizeLabel.setMinimumWidth(50)
+        self.sizeLabel.setStyleSheet("color: #333; font-size: 11px;")
+        controlLayout.addWidget(self.sizeLabel)
+
+        return controlWidget
+
+    def onSizeChanged(self, value: int) -> None:
+        """Handle thumbnail size slider change."""
+        self.thumbnailSize = value
+        self.sizeLabel.setText(f"{value}px")
+        if self.viewer.thumbnails:
+            self.updateThumbnails()
 
     def updateThumbnails(self) -> None:
         """Recreate all thumbnail widgets based on current slide order."""
@@ -61,21 +184,21 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         self.thumbnailWidgets.clear()
 
         # Clear layout
-        while self.gridLayout.count():
-            self.gridLayout.takeAt(0)
+        while self.flowLayout.count():
+            item = self.flowLayout.takeAt(0)
+            if item:
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
 
         # Create thumbnail widgets
-        columns = max(1, self.width() // 220)  # 200px thumb + 20px spacing
-
         for position, pageNum in enumerate(self.viewer.slideOrder):
-            thumb = SlideThumbnail(self.viewer, position, pageNum)
+            thumb = SlideThumbnail(self.viewer, position, pageNum, self.thumbnailSize)
             thumb.clicked.connect(lambda pos=position: self.onSlideClicked(pos))
             thumb.moveRequested.connect(self.onMoveSlide)
             thumb.deleteRequested.connect(self.onDeleteSlide)
 
-            row = position // columns
-            col = position % columns
-            self.gridLayout.addWidget(thumb, row, col)
+            self.flowLayout.addWidget(thumb)
             self.thumbnailWidgets.append(thumb)
 
         if self.selectedPosition is not None and self.selectedPosition < len(self.thumbnailWidgets):
@@ -139,63 +262,100 @@ class SlideOrganizer(QtWidgets.QScrollArea):
             self.updateThumbnails()
 
 
-class SlideThumbnail(QtWidgets.QFrame):
+class SlideThumbnail(QtWidgets.QWidget):
     """Individual slide thumbnail with drag-and-drop support."""
 
     clicked = QtCore.pyqtSignal(int)  # position
     moveRequested = QtCore.pyqtSignal(int, int)  # from, to
     deleteRequested = QtCore.pyqtSignal(int)  # position
 
-    def __init__(self, viewer: ViewerProtocol, position: int, pageNum: int) -> None:
+    def __init__(
+        self, viewer: ViewerProtocol, position: int, pageNum: int, size: int = 200
+    ) -> None:
         super().__init__()
         self.viewer: ViewerProtocol = viewer
         self.position: int = position
         self.pageNum: int = pageNum
+        self.size: int = size
         self.selected: bool = False
         self.dragStartPosition: QtCore.QPoint = QtCore.QPoint()
 
-        self.setFrameStyle(QtWidgets.QFrame.Shape.Box)
-        self.setLineWidth(2)
-        self.setMinimumSize(200, 150)
-        self.setMaximumSize(200, 300)
-        self.setAcceptDrops(True)
-
+        # Main layout
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
 
-        # Thumbnail image
-        self.imageLabel = QtWidgets.QLabel()
-        self.imageLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.imageLabel.setScaledContents(False)
-        layout.addWidget(self.imageLabel)
-
-        # Slide number and controls
-        controlLayout = QtWidgets.QHBoxLayout()
-        self.numberLabel = QtWidgets.QLabel(f"#{position + 1} (Page {pageNum + 1})")
+        # Slide number label (above thumbnail)
+        self.numberLabel = QtWidgets.QLabel(f"{position + 1}")
         self.numberLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.numberLabel.setStyleSheet(
+            "color: #666; font-size: 12px; font-weight: bold; background: transparent;"
+        )
+        layout.addWidget(self.numberLabel)
 
-        self.deleteBtn = QtWidgets.QPushButton("✕")
-        self.deleteBtn.setMaximumWidth(30)
-        self.deleteBtn.clicked.connect(lambda: self.deleteRequested.emit(self.position))
+        # Thumbnail container with border
+        self.thumbnailFrame = QtWidgets.QLabel()
+        self.thumbnailFrame.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.thumbnailFrame.setScaledContents(False)
 
-        controlLayout.addWidget(self.numberLabel, 1)
-        controlLayout.addWidget(self.deleteBtn)
-        layout.addLayout(controlLayout)
+        # Calculate size maintaining aspect ratio
+        aspect_ratio = 1.41  # Approximate A4/Letter aspect ratio
+        thumb_height = int(size * aspect_ratio)
 
-        self.updateImage()
+        self.thumbnailFrame.setFixedSize(size, thumb_height)
         self.updateStyle()
+
+        layout.addWidget(self.thumbnailFrame)
+
+        # Delete button (below thumbnail)
+        self.deleteBtn = QtWidgets.QPushButton("🗑")
+        self.deleteBtn.setFixedSize(size, 24)
+        self.deleteBtn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.deleteBtn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #E74C3C;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #C0392B;
+            }
+            QPushButton:pressed {
+                background-color: #A93226;
+            }
+        """
+        )
+        self.deleteBtn.clicked.connect(lambda: self.deleteRequested.emit(self.position))
+        layout.addWidget(self.deleteBtn)
+
+        self.setAcceptDrops(True)
+        self.updateImage()
+
+    def sizeHint(self) -> QtCore.QSize:
+        """Provide size hint for flow layout."""
+        aspect_ratio = 1.41
+        thumb_height = int(self.size * aspect_ratio)
+        total_height = 18 + thumb_height + 4 + 24 + 8  # number + thumb + spacing + button + margin
+        return QtCore.QSize(self.size, total_height)
 
     def updateImage(self) -> None:
         """Update the thumbnail image."""
         if self.pageNum in self.viewer.thumbnails:
             pixmap = QtGui.QPixmap.fromImage(self.viewer.thumbnails[self.pageNum])
+            # Scale to fit the current size setting
+            aspect_ratio = 1.41
+            display_height = int(self.size * aspect_ratio)
             scaled = pixmap.scaled(
-                180,
-                200,
+                self.size - 4,  # Account for border
+                display_height - 4,
                 QtCore.Qt.AspectRatioMode.KeepAspectRatio,
                 QtCore.Qt.TransformationMode.SmoothTransformation,
             )
-            self.imageLabel.setPixmap(scaled)
+            self.thumbnailFrame.setPixmap(scaled)
 
     def setSelected(self, selected: bool) -> None:
         """Highlight this thumbnail as selected."""
@@ -205,9 +365,25 @@ class SlideThumbnail(QtWidgets.QFrame):
     def updateStyle(self) -> None:
         """Update visual style based on selection state."""
         if self.selected:
-            self.setStyleSheet("QFrame { border: 3px solid #4CAF50; background-color: #E8F5E9; }")
+            self.thumbnailFrame.setStyleSheet(
+                """
+                QLabel {
+                    background-color: white;
+                    border: 3px solid #FF6B35;
+                    padding: 2px;
+                }
+            """
+            )
         else:
-            self.setStyleSheet("QFrame { border: 1px solid #CCC; background-color: white; }")
+            self.thumbnailFrame.setStyleSheet(
+                """
+                QLabel {
+                    background-color: white;
+                    border: 1px solid #D0D0D0;
+                    padding: 2px;
+                }
+            """
+            )
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
@@ -225,18 +401,39 @@ class SlideThumbnail(QtWidgets.QFrame):
         mimeData = QtCore.QMimeData()
         mimeData.setText(str(self.position))
         drag.setMimeData(mimeData)
-        drag.setPixmap(self.grab().scaled(100, 100, QtCore.Qt.AspectRatioMode.KeepAspectRatio))
+
+        # Create drag pixmap of the thumbnail
+        pixmap = self.thumbnailFrame.grab()
+        scaled_pixmap = pixmap.scaled(
+            100,
+            141,
+            QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+            QtCore.Qt.TransformationMode.SmoothTransformation,
+        )
+        drag.setPixmap(scaled_pixmap)
+        drag.setHotSpot(scaled_pixmap.rect().center())
+
         drag.exec(QtCore.Qt.DropAction.MoveAction)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            self.clicked.emit(self.position)
+            # Only emit click if we didn't drag
+            if (event.pos() - self.dragStartPosition).manhattanLength() < 5:
+                self.clicked.emit(self.position)
 
     def dragEnterEvent(self, event: QtGui.QDragEnterEvent) -> None:
         mimeData = event.mimeData()
         if mimeData is not None and mimeData.hasText():
             event.acceptProposedAction()
-            self.setStyleSheet("QFrame { border: 3px dashed #2196F3; }")
+            self.thumbnailFrame.setStyleSheet(
+                """
+                QLabel {
+                    background-color: #E8F4FF;
+                    border: 3px dashed #2196F3;
+                    padding: 2px;
+                }
+            """
+            )
 
     def dragLeaveEvent(self, event: QtGui.QDragLeaveEvent) -> None:
         self.updateStyle()
