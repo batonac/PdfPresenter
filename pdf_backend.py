@@ -40,12 +40,14 @@ class SlideImageProvider(QtQuick.QQuickImageProvider):
             if 0 <= position < len(self.backend._slideOrder):
                 page_num = self.backend._slideOrder[position]
                 if page_num in self.backend._thumbnails:
-                    return self.backend._thumbnails[page_num], self.backend._thumbnails[page_num].size()
+                    image = self.backend._thumbnails[page_num]
+                    # Return just the image - PySide6 handles the size internally
+                    return image
         except (ValueError, IndexError):
             pass
         
         # Return empty image if not found
-        return QtGui.QImage(), QtCore.QSize()
+        return QtGui.QImage()
 
 
 class ProjectionImageProvider(QtQuick.QQuickImageProvider):
@@ -62,12 +64,14 @@ class ProjectionImageProvider(QtQuick.QQuickImageProvider):
             if 0 <= position < len(self.backend._slideOrder):
                 page_num = self.backend._slideOrder[position]
                 if page_num in self.backend._fullImages:
-                    return self.backend._fullImages[page_num], self.backend._fullImages[page_num].size()
+                    image = self.backend._fullImages[page_num]
+                    # Return just the image - PySide6 handles the size internally
+                    return image
         except (ValueError, IndexError):
             pass
         
         # Return empty image if not found
-        return QtGui.QImage(), QtCore.QSize()
+        return QtGui.QImage()
 
 
 class SlideModel(QtCore.QAbstractListModel):
