@@ -1,0 +1,56 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Sync Dependencies",
+			"type": "shell",
+			"command": "uv sync",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Sync Dev Dependencies",
+			"type": "shell",
+			"command": "uv sync --all-extras",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run PDF Presenter",
+			"type": "shell",
+			"command": "uv run python pdfpresenter.py",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Format Code",
+			"type": "shell",
+			"command": "uv run black pdfpresenter.py",
+			"group": "none",
+			"problemMatcher": []
+		},
+		{
+			"label": "Lint Code",
+			"type": "shell",
+			"command": "uv run flake8 pdfpresenter.py",
+			"group": "test",
+			"problemMatcher": []
+		},
+		{
+			"label": "Add Dependency",
+			"type": "shell",
+			"command": "uv add ${input:packageName}",
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "packageName",
+			"type": "promptString",
+			"description": "Package name to add"
+		}
+	]
+}

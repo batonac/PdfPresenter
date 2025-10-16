@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pdfpresenter"
+version = "0.2.0"
+description = "A PDF presentation tool with presenter view and notes"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Alex Passfall" }
+]
+keywords = ["pdf", "presentation", "presenter", "qt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics :: Presentation",
+]
+dependencies = [
+    "pyqt6>=6.9.1",
+    "qpageview>=1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+pdfpresenter = "pdfpresenter:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/pdfpresenter"
+Repository = "https://github.com/yourusername/pdfpresenter.git"
+Issues = "https://github.com/yourusername/pdfpresenter/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[dependency-groups]
+dev = [
+    "black>=25.9.0",
+]

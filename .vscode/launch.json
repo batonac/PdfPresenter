@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: PDF Presenter (uv)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pdfpresenter",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "preLaunchTask": "Sync Dependencies"
+        },
+        {
+            "name": "Python: PDF Presenter Direct",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/pdfpresenter.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "python": "${workspaceFolder}/.venv/bin/python"
+        },
+        {
+            "name": "Python: Current File (uv)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "python": "${workspaceFolder}/.venv/bin/python"
+        }
+    ]
+}
