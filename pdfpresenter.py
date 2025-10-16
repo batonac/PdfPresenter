@@ -94,32 +94,52 @@ class QtPDFViewer(QtWidgets.QWidget):
             return
 
         num_pages = len(self.pages)
+
+        # Get the window size to determine how to fit the page
         target_width = self.presenterWindow.width()
         target_height = self.presenterWindow.height()
+
+        # Render at high DPI for quality (independent of window size)
+        # This is the actual rendering resolution
+        render_dpi = 200.0  # High quality rendering DPI
+
+        print(f"Rendering at {render_dpi} DPI for window: {target_width}x{target_height}")
 
         for i in range(num_pages):
             print(f"Rendering Page {i+1}/{num_pages}")
             page = self.pages[i]
 
-            # Get page size in points
+            # Get page size in points (72 DPI)
             page_size = page.pageSize()
 
-            # Calculate scale to fit in presenter window
-            scale_w = target_width / page_size.width()
-            scale_h = target_height / page_size.height()
+            # Calculate the size at our high DPI
+            # Points to inches: divide by 72, then multiply by render_dpi
+            render_width = int(page_size.width() / 72.0 * render_dpi)
+            render_height = int(page_size.height() / 72.0 * render_dpi)
+
+            # Render at high resolution
+            image = page.renderer._render_image(
+                page.document, page.pageNumber, render_dpi, render_dpi, render_width, render_height
+            )
+
+            # Now scale the high-res image to fit in the window
+            # Calculate the scale to fit
+            scale_w = target_width / render_width
+            scale_h = target_height / render_height
             scale = min(scale_w, scale_h)
 
-            # Render at appropriate DPI
-            dpi = 72 * scale
+            # Scale down to window size with high-quality scaling
+            scaled_width = int(render_width * scale)
+            scaled_height = int(render_height * scale)
 
-            # Use the page's render method to get a QImage
-            width = int(page_size.width() * scale)
-            height = int(page_size.height() * scale)
-
-            image = page.renderer._render_image(
-                page.document, page.pageNumber, dpi, dpi, width, height
+            scaled_image = image.scaled(
+                scaled_width,
+                scaled_height,
+                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation,
             )
-            self.pdfImages[i] = image
+
+            self.pdfImages[i] = scaled_image
 
         self.update()
         self.presenterWindow.update()
@@ -215,12 +235,30 @@ class ProjectorView(QtWidgets.QMainWindow):
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         painter = QtGui.QPainter(self)
+        # Enable high-quality rendering
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+
         if self.viewer.currentPage in self.viewer.pdfImages:
             image = self.viewer.pdfImages[self.viewer.currentPage]
-            # Center the image in the window
-            x = int((self.width() - image.width()) / 2)
-            y = int((self.height() - image.height()) / 2)
-            painter.drawImage(x, y, image)
+
+            # Use the same scaling approach as PDFView for consistency
+            target = QtCore.QRectF(0, 0, self.width(), self.height())
+            source = QtCore.QRectF(0, 0, image.width(), image.height())
+
+            # Calculate scaling to fit
+            scale_w = target.width() / source.width()
+            scale_h = target.height() / source.height()
+            scale = min(scale_w, scale_h)
+
+            # Center the image
+            scaled_w = source.width() * scale
+            scaled_h = source.height() * scale
+            x = (target.width() - scaled_w) / 2
+            y = (target.height() - scaled_h) / 2
+
+            dest_rect = QtCore.QRectF(x, y, scaled_w, scaled_h)
+            painter.drawImage(dest_rect, image)
 
     def toggleFullscreen(self) -> None:
         if self.isFullScreen():
