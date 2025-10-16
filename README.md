@@ -4,9 +4,14 @@ A PDF presentation tool with presenter view, notes, and timer functionality buil
 
 ## Features
 
-- **Editor Mode**: Organize slides, reorder, and remove pages before presenting
+- **Integrated Navigation**: Files and slides in a unified interface
+- **Embedded File Browser**: Browse PDF files directly in the navigation sidebar
+- **Drag & Drop Import**: Drag PDF files from navigation into slide deck
+- **Multi-PDF Support**: Import pages from multiple PDF documents
+- **Slide Organization**: Reorder and remove slides before presenting
+- **PDF Export**: Save your organized slides as a new PDF
 - **Presentation Mode**: Dual window display (presenter view and projection view)
-- **Modern UI**: Fluent Design System with PyQt-Fluent-Widgets
+- **Fluent UI**: Native Fluent Design System throughout the app
 - Speaker notes with autosave
 - Built-in timer
 - Keyboard shortcuts for navigation
@@ -19,6 +24,7 @@ A PDF presentation tool with presenter view, notes, and timer functionality buil
 - [uv](https://docs.astral.sh/uv/) package manager
 - PySide6 (includes QtPdf)
 - PySide6-Fluent-Widgets
+- PyMuPDF (for PDF export)
 
 ## Installation
 
@@ -66,10 +72,19 @@ uv run python main.py
 ### Workflow
 
 1. **Editor Mode** (opens by default):
-   - Click "Import File" to load a PDF
-   - Drag and drop thumbnails to reorder slides
-   - Click "Remove Page" to delete the selected slide
-   - Click "Present" to start presentation mode
+   - Click "Browse Folder" in the navigation sidebar to select a folder with PDFs
+   - PDF files appear in the navigation tree
+   - **Double-click** a PDF file to import it
+   - **Drag and drop** PDF files from the navigation tree into the slide organizer
+   - Or use "Import PDF" to select files manually
+   - In the slide organizer:
+     - Drag thumbnails to reorder slides
+     - Select and delete unwanted slides
+     - Adjust thumbnail size with the slider
+   - Use navigation actions:
+     - "Export PDF" to save your organized slides
+     - "Remove Page" to delete selected slide
+     - "Present" to start presentation mode
 
 2. **Presentation Mode**:
    - Presenter view shows current slide preview, notes, and timer

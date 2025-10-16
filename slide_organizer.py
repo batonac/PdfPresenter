@@ -18,7 +18,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from PySide6 import QtCore, QtGui, QtWidgets
-from qfluentwidgets import BodyLabel, PushButton, Slider
+from qfluentwidgets import (
+    BodyLabel,
+    CardWidget,
+    PushButton,
+    ScrollArea,
+    SimpleCardWidget,
+    Slider,
+    SubtitleLabel,
+)
+from qfluentwidgets.components.layout import FlowLayout
 
 if TYPE_CHECKING:
     from editor_window import EditorWindow
@@ -36,91 +45,10 @@ class ViewerProtocol(Protocol):
     def update(self) -> None: ...
 
 
-class FlowLayout(QtWidgets.QLayout):
-    """A flow layout that wraps items left-to-right, top-to-bottom."""
-
-    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.itemList: list[QtWidgets.QLayoutItem] = []
-        self.spacing_h: int = 20
-        self.spacing_v: int = 20
-
-    def addItem(self, item: QtWidgets.QLayoutItem) -> None:
-        self.itemList.append(item)
-        self.invalidate()
-
-    def count(self) -> int:
-        return len(self.itemList)
-
-    def itemAt(self, index: int) -> QtWidgets.QLayoutItem | None:
-        if 0 <= index < len(self.itemList):
-            return self.itemList[index]
-        return None
-
-    def takeAt(self, index: int) -> QtWidgets.QLayoutItem | None:
-        if 0 <= index < len(self.itemList):
-            item = self.itemList.pop(index)
-            self.invalidate()
-            return item
-        return None
-
-    def expandingDirections(self) -> QtCore.Qt.Orientation:
-        return QtCore.Qt.Orientation(0)
-
-    def hasHeightForWidth(self) -> bool:
-        return True
-
-    def heightForWidth(self, width: int) -> int:
-        return self._doLayout(QtCore.QRect(0, 0, width, 0), True)
-
-    def setGeometry(self, rect: QtCore.QRect) -> None:
-        super().setGeometry(rect)
-        self._doLayout(rect, False)
-
-    def sizeHint(self) -> QtCore.QSize:
-        return self.minimumSize()
-
-    def minimumSize(self) -> QtCore.QSize:
-        size = QtCore.QSize()
-        for item in self.itemList:
-            size = size.expandedTo(item.minimumSize())
-
-        # Add margins
-        margins = self.contentsMargins()
-        size += QtCore.QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
-        return size
-
-    def _doLayout(self, rect: QtCore.QRect, testOnly: bool) -> int:
-        x = rect.x()
-        y = rect.y()
-        lineHeight = 0
-
-        for item in self.itemList:
-            widget = item.widget()
-            if widget is None:
-                continue
-
-            spaceX = self.spacing_h
-            spaceY = self.spacing_v
-            nextX = x + item.sizeHint().width() + spaceX
-
-            if nextX - spaceX > rect.right() and lineHeight > 0:
-                x = rect.x()
-                y = y + lineHeight + spaceY
-                nextX = x + item.sizeHint().width() + spaceX
-                lineHeight = 0
-
-            if not testOnly:
-                item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
-
-            x = nextX
-            lineHeight = max(lineHeight, item.sizeHint().height())
-
-        return y + lineHeight - rect.y()
-
-
-class SlideOrganizer(QtWidgets.QScrollArea):
+class SlideOrganizer(ScrollArea):
     """Grid view of slides with drag-and-drop reordering."""
+
+    filesDropped = QtCore.Signal(list)  # list of file paths
 
     def __init__(self, viewer: ViewerProtocol) -> None:
         super().__init__()
@@ -128,32 +56,49 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         self.selectedPosition: int | None = None
         self.thumbnailSize: int = 200  # Default thumbnail width
 
-        self.setWidgetResizable(True)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-
-        # Set light background like PowerPoint
-        self.setStyleSheet("QScrollArea { background-color: #F3F3F3; border: none; }")
+        self.setAcceptDrops(True)
+        self.enableTransparentBackground()
 
         # Container widget with flow layout
         self.container: QtWidgets.QWidget = QtWidgets.QWidget()
-        self.container.setStyleSheet("background-color: #F3F3F3;")
-        self.flowLayout: FlowLayout = FlowLayout(self.container)
-        self.flowLayout.spacing_h = 20
-        self.flowLayout.spacing_v = 20
+        self.flowLayout: FlowLayout = FlowLayout(self.container, needAni=True)
+        self.flowLayout.setAnimation(200)
+        self.flowLayout.setContentsMargins(20, 20, 20, 20)
+        self.flowLayout.setVerticalSpacing(20)
+        self.flowLayout.setHorizontalSpacing(20)
+
         self.container.setLayout(self.flowLayout)
         self.setWidget(self.container)
+        self.setWidgetResizable(True)
 
         self.thumbnailWidgets: list[SlideThumbnail] = []
+
+        # Empty state card with better styling
+        self.emptyCard = CardWidget()
+        emptyLayout = QtWidgets.QVBoxLayout(self.emptyCard)
+        emptyLayout.setContentsMargins(40, 40, 40, 40)
+        emptyLayout.setSpacing(16)
+
+        emptyTitle = SubtitleLabel("No slides loaded")
+        emptyTitle.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        emptyLayout.addWidget(emptyTitle)
+
+        emptyText = BodyLabel("Drop PDF files here or use 'Import PDF' to get started")
+        emptyText.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        emptyLayout.addWidget(emptyText)
+
+        self.flowLayout.addWidget(self.emptyCard)
+
+    def _onFilesDropped(self, files: list[str]) -> None:
+        """Handle files dropped on the drop widget."""
+        self.filesDropped.emit(files)
 
     def createSizeControl(self) -> QtWidgets.QWidget:
         """Create the thumbnail size slider control as a separate widget."""
         controlWidget = QtWidgets.QWidget()
-        controlWidget.setStyleSheet("background-color: #E8E8E8; border-top: 1px solid #CCC;")
         controlLayout = QtWidgets.QHBoxLayout(controlWidget)
         controlLayout.setContentsMargins(10, 8, 10, 8)
 
-        # Add stretch to push controls to the right
         controlLayout.addStretch()
 
         label = BodyLabel("Thumbnail Size:")
@@ -186,14 +131,16 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         for widget in self.thumbnailWidgets:
             widget.deleteLater()
         self.thumbnailWidgets.clear()
+        self.flowLayout.removeAllWidgets()
 
-        # Clear layout
-        while self.flowLayout.count():
-            item = self.flowLayout.takeAt(0)
-            if item:
-                widget = item.widget()
-                if widget:
-                    widget.deleteLater()
+        # Show empty card if no slides
+        if not self.viewer.slideOrder:
+            self.flowLayout.addWidget(self.emptyCard)
+            self.emptyCard.show()
+            return
+
+        # Hide empty card when we have slides
+        self.emptyCard.hide()
 
         # Create thumbnail widgets
         for position, pageNum in enumerate(self.viewer.slideOrder):
@@ -207,19 +154,6 @@ class SlideOrganizer(QtWidgets.QScrollArea):
 
         if self.selectedPosition is not None and self.selectedPosition < len(self.thumbnailWidgets):
             self.thumbnailWidgets[self.selectedPosition].setSelected(True)
-
-        # Force layout update and geometry recalculation
-        self.container.updateGeometry()
-        QtCore.QTimer.singleShot(0, self._updateScrollArea)
-
-    def _updateScrollArea(self) -> None:
-        """Update scroll area to reflect new content size."""
-        # Calculate the required height for all thumbnails
-        width = self.viewport().width()
-        height = self.flowLayout.heightForWidth(width)
-
-        # Set minimum size for container to enable scrolling
-        self.container.setMinimumSize(width, height)
 
     def setCurrentSlide(self, position: int) -> None:
         """Highlight the current slide."""
@@ -236,7 +170,6 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         self.selectedPosition = position
         self.setCurrentSlide(position)
 
-        # If we're in a presentation, jump to this slide
         if hasattr(self.viewer, "presentationWindow") and self.viewer.presentationWindow:
             self.viewer.presentationWindow.jumpToSlide(position)
 
@@ -246,7 +179,6 @@ class SlideOrganizer(QtWidgets.QScrollArea):
             pageNum = self.viewer.slideOrder.pop(fromPos)
             self.viewer.slideOrder.insert(toPos, pageNum)
 
-            # Adjust current page if needed
             if self.viewer.currentPage == fromPos:
                 self.viewer.currentPage = toPos
             elif fromPos < self.viewer.currentPage <= toPos:
@@ -261,70 +193,82 @@ class SlideOrganizer(QtWidgets.QScrollArea):
         if len(self.viewer.slideOrder) > 1 and 0 <= position < len(self.viewer.slideOrder):
             self.viewer.slideOrder.pop(position)
 
-            # Adjust current page
             if self.viewer.currentPage >= len(self.viewer.slideOrder):
                 self.viewer.currentPage = len(self.viewer.slideOrder) - 1
             elif self.viewer.currentPage > position:
                 self.viewer.currentPage -= 1
 
             self.updateThumbnails()
-            # Only update if there's a presentation window
             if hasattr(self.viewer, "presentationWindow") and self.viewer.presentationWindow:
                 self.viewer.presentationWindow.projectorWindow.update()
 
-    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        super().resizeEvent(event)
-        # Update container size when scroll area is resized
-        if self.viewer.thumbnails and self.thumbnailWidgets:
-            self._updateScrollArea()
+    def dragEnterEvent(self, event: QtGui.QDragEnterEvent) -> None:
+        """Accept file drops."""
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if any(url.toLocalFile().lower().endswith(".pdf") for url in urls):
+                event.acceptProposedAction()
+
+    def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        """Handle dropped PDF files."""
+        if event.mimeData().hasUrls():
+            files = []
+            for url in event.mimeData().urls():
+                filepath = url.toLocalFile()
+                if filepath.lower().endswith(".pdf"):
+                    files.append(filepath)
+
+            if files:
+                self.filesDropped.emit(files)
+                event.acceptProposedAction()
 
 
-class SlideThumbnail(QtWidgets.QWidget):
+class SlideThumbnail(SimpleCardWidget):
     """Individual slide thumbnail with drag-and-drop support."""
 
-    clicked = QtCore.Signal(int)  # position
-    moveRequested = QtCore.Signal(int, int)  # from, to
-    deleteRequested = QtCore.Signal(int)  # position
+    clicked = QtCore.Signal(int)
+    moveRequested = QtCore.Signal(int, int)
+    deleteRequested = QtCore.Signal(int)
 
     def __init__(
-        self, viewer: ViewerProtocol, position: int, pageNum: int, size: int = 200
+        self, viewer: ViewerProtocol, position: int, pageNum: int, thumbSize: int = 200
     ) -> None:
         super().__init__()
         self.viewer: ViewerProtocol = viewer
         self.position: int = position
         self.pageNum: int = pageNum
-        self.size: int = size
+        self.thumbSize: int = thumbSize
         self.selected: bool = False
         self.dragStartPosition: QtCore.QPoint = QtCore.QPoint()
 
+        # Set card properties
+        self.setBorderRadius(8)
+
         # Main layout
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
-        # Slide number label (above thumbnail)
+        # Slide number label
         self.numberLabel = BodyLabel(f"{position + 1}")
         self.numberLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.numberLabel)
 
-        # Thumbnail container with border
+        # Thumbnail container - still QLabel for image display
         self.thumbnailFrame = QtWidgets.QLabel()
         self.thumbnailFrame.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.thumbnailFrame.setScaledContents(False)
+        self.thumbnailFrame.setStyleSheet("QLabel { background: transparent; }")
 
-        # Calculate size maintaining aspect ratio
-        aspect_ratio = 1.41  # Approximate A4/Letter aspect ratio
-        thumb_height = int(size * aspect_ratio)
-
-        self.thumbnailFrame.setFixedSize(size, thumb_height)
-        self.updateStyle()
+        aspect_ratio = 1.41
+        thumb_height = int(thumbSize * aspect_ratio)
+        self.thumbnailFrame.setFixedSize(thumbSize, thumb_height)
 
         layout.addWidget(self.thumbnailFrame)
 
-        # Delete button (below thumbnail)
-        self.deleteBtn = PushButton("🗑")
-        self.deleteBtn.setFixedSize(size, 28)
-        self.deleteBtn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        # Delete button - already using Fluent PushButton
+        self.deleteBtn = PushButton("Delete")
+        self.deleteBtn.setFixedHeight(32)
         self.deleteBtn.clicked.connect(lambda: self.deleteRequested.emit(self.position))
         layout.addWidget(self.deleteBtn)
 
@@ -334,56 +278,36 @@ class SlideThumbnail(QtWidgets.QWidget):
     def sizeHint(self) -> QtCore.QSize:
         """Provide size hint for flow layout."""
         aspect_ratio = 1.41
-        thumb_height = int(self.size * aspect_ratio)
-        total_height = 18 + thumb_height + 4 + 24 + 8  # number + thumb + spacing + button + margin
-        return QtCore.QSize(self.size, total_height)
+        thumb_height = int(self.thumbSize * aspect_ratio)
+        total_height = 24 + thumb_height + 32 + 32  # label + thumb + button + margins
+        return QtCore.QSize(self.thumbSize + 24, total_height)
 
     def updateImage(self) -> None:
         """Update the thumbnail image."""
         if self.pageNum in self.viewer.thumbnails:
             pixmap = QtGui.QPixmap.fromImage(self.viewer.thumbnails[self.pageNum])
-            # Scale to fit the current size setting
             aspect_ratio = 1.41
-            display_height = int(self.size * aspect_ratio)
+            display_height = int(self.thumbSize * aspect_ratio)
             scaled = pixmap.scaled(
-                self.size - 4,  # Account for border
-                display_height - 4,
+                self.thumbSize,
+                display_height,
                 QtCore.Qt.AspectRatioMode.KeepAspectRatio,
                 QtCore.Qt.TransformationMode.SmoothTransformation,
             )
             self.thumbnailFrame.setPixmap(scaled)
 
     def setSelected(self, selected: bool) -> None:
-        """Highlight this thumbnail as selected."""
+        """Highlight this thumbnail as selected using border radius."""
         self.selected = selected
-        self.updateStyle()
-
-    def updateStyle(self) -> None:
-        """Update visual style based on selection state."""
-        if self.selected:
-            self.thumbnailFrame.setStyleSheet(
-                """
-                QLabel {
-                    background-color: white;
-                    border: 3px solid #FF6B35;
-                    padding: 2px;
-                }
-            """
-            )
+        if selected:
+            self.setBorderRadius(16)  # More rounded when selected
         else:
-            self.thumbnailFrame.setStyleSheet(
-                """
-                QLabel {
-                    background-color: white;
-                    border: 1px solid #D0D0D0;
-                    padding: 2px;
-                }
-            """
-            )
+            self.setBorderRadius(8)  # Default radius
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self.dragStartPosition = event.pos()
+        super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         if not (event.buttons() & QtCore.Qt.MouseButton.LeftButton):
@@ -398,7 +322,6 @@ class SlideThumbnail(QtWidgets.QWidget):
         mimeData.setText(str(self.position))
         drag.setMimeData(mimeData)
 
-        # Create drag pixmap of the thumbnail
         pixmap = self.thumbnailFrame.grab()
         scaled_pixmap = pixmap.scaled(
             100,
@@ -413,26 +336,18 @@ class SlideThumbnail(QtWidgets.QWidget):
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            # Only emit click if we didn't drag
             if (event.pos() - self.dragStartPosition).manhattanLength() < 5:
                 self.clicked.emit(self.position)
+        super().mouseReleaseEvent(event)
 
     def dragEnterEvent(self, event: QtGui.QDragEnterEvent) -> None:
         mimeData = event.mimeData()
         if mimeData is not None and mimeData.hasText():
             event.acceptProposedAction()
-            self.thumbnailFrame.setStyleSheet(
-                """
-                QLabel {
-                    background-color: #E8F4FF;
-                    border: 3px dashed #2196F3;
-                    padding: 2px;
-                }
-            """
-            )
+            self.setBorderRadius(16)  # Visual feedback during drag
 
     def dragLeaveEvent(self, event: QtGui.QDragLeaveEvent) -> None:
-        self.updateStyle()
+        self.setBorderRadius(8 if not self.selected else 16)
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
         mimeData = event.mimeData()
@@ -441,4 +356,8 @@ class SlideThumbnail(QtWidgets.QWidget):
             toPos = self.position
             self.moveRequested.emit(fromPos, toPos)
             event.acceptProposedAction()
-        self.updateStyle()
+        self.setBorderRadius(8 if not self.selected else 16)
+        self.setBorderRadius(8 if not self.selected else 16)
+        self.setBorderRadius(8 if not self.selected else 16)
+        self.setBorderRadius(8 if not self.selected else 16)
+        self.setBorderRadius(8 if not self.selected else 16)

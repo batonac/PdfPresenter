@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtGui, QtWidgets
-from qfluentwidgets import PushButton
+from qfluentwidgets import CardWidget, PushButton, StrongBodyLabel, SubtitleLabel
 
 from notes import Notes
 from timer import PauseableTimer
@@ -39,6 +39,7 @@ class PresentationWindow(QtWidgets.QWidget):
         self.projectorWindow: ProjectorWindow
         self.uhr: QtWidgets.QLCDNumber
         self.notes: Notes
+        self.previewCard: CardWidget
         self.previewLabel: QtWidgets.QLabel
         self.ptimer: PauseableTimer
 
@@ -53,20 +54,27 @@ class PresentationWindow(QtWidgets.QWidget):
         self.setWindowTitle("PDF Presenter - Presenter View")
         self.resize(800, 600)
 
-        # Timer and controls
+        # Timer card
+        timerCard = CardWidget()
+        timerLayout = QtWidgets.QVBoxLayout(timerCard)
+        timerLayout.setContentsMargins(16, 16, 16, 16)
+        timerLayout.setSpacing(12)
+
+        timerTitle = StrongBodyLabel("Timer")
+        timerLayout.addWidget(timerTitle)
+
         self.uhr = QtWidgets.QLCDNumber()
         self.uhr.display("00:00")
+        timerLayout.addWidget(self.uhr)
+
+        timerButtonLayout = QtWidgets.QHBoxLayout()
         bStart = PushButton("Start")
         bStop = PushButton("Stop")
         bStart.clicked.connect(self.startButton)
         bStop.clicked.connect(self.stopButton)
-
-        clockbox = QtWidgets.QVBoxLayout()
-        clockbox.addWidget(self.uhr)
-        clockbuttonbox = QtWidgets.QHBoxLayout()
-        clockbuttonbox.addWidget(bStart)
-        clockbuttonbox.addWidget(bStop)
-        clockbox.addLayout(clockbuttonbox)
+        timerButtonLayout.addWidget(bStart)
+        timerButtonLayout.addWidget(bStop)
+        timerLayout.addLayout(timerButtonLayout)
 
         # Notes
         self.notes = Notes()
@@ -74,24 +82,40 @@ class PresentationWindow(QtWidgets.QWidget):
             self.notes.read(self.editor.currentFile)
             self.notes.show(self.getCurrentSlideIndex())
 
-        # Preview of current slide
+        # Preview card
+        self.previewCard = CardWidget()
+        previewLayout = QtWidgets.QVBoxLayout(self.previewCard)
+        previewLayout.setContentsMargins(16, 16, 16, 16)
+        previewLayout.setSpacing(12)
+
+        previewTitle = StrongBodyLabel("Current Slide")
+        previewLayout.addWidget(previewTitle)
+
         self.previewLabel = QtWidgets.QLabel()
         self.previewLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.previewLabel.setMinimumSize(400, 300)
-
-        previewBox = QtWidgets.QVBoxLayout()
-        previewBox.addWidget(QtWidgets.QLabel("Current Slide Preview:"))
-        previewBox.addWidget(self.previewLabel, 1)
+        previewLayout.addWidget(self.previewLabel, 1)
 
         # Layout
         topLayout = QtWidgets.QHBoxLayout()
-        topLayout.addLayout(previewBox, 1)
-        topLayout.addLayout(clockbox, 0)
+        topLayout.addWidget(self.previewCard, 1)
+        topLayout.addWidget(timerCard, 0)
+
+        # Notes card
+        notesCard = CardWidget()
+        notesLayout = QtWidgets.QVBoxLayout(notesCard)
+        notesLayout.setContentsMargins(16, 16, 16, 16)
+        notesLayout.setSpacing(12)
+
+        notesTitle = StrongBodyLabel("Speaker Notes")
+        notesLayout.addWidget(notesTitle)
+        notesLayout.addWidget(self.notes, 1)
 
         mainLayout = QtWidgets.QVBoxLayout()
+        mainLayout.setContentsMargins(16, 16, 16, 16)
+        mainLayout.setSpacing(16)
         mainLayout.addLayout(topLayout, 1)
-        mainLayout.addWidget(QtWidgets.QLabel("Speaker Notes:"))
-        mainLayout.addWidget(self.notes, 1)
+        mainLayout.addWidget(notesCard, 1)
 
         self.setLayout(mainLayout)
 
@@ -282,4 +306,6 @@ class ProjectorWindow(QtWidgets.QMainWindow):
         elif event.key() == QtCore.Qt.Key.Key_Left:
             self.presenter.prevPage()
         elif event.key() == QtCore.Qt.Key.Key_Right:
+            self.presenter.nextPage()
+            self.presenter.nextPage()
             self.presenter.nextPage()
